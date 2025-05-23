@@ -1,6 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ImageBackground } from 'react-native';
 import { useRouter } from 'expo-router';
+import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function LandingScreen() {
   const router = useRouter();
@@ -27,10 +26,11 @@ export default function LandingScreen() {
 
         <TouchableOpacity
           style={[styles.button, styles.adminButton]}
-          onPress={() => router.push('/admin-home')}
-        >
-          <Text style={styles.buttonText}>Continue as Admin</Text>
+          onPress={() => router.push('/login')}  // updated path here
+         >
+         <Text style={styles.buttonText}>Continue as Admin</Text>
         </TouchableOpacity>
+
       </View>
     </ImageBackground>
   );
