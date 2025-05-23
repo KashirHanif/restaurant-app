@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { useRouter } from 'expo-router'; // Import router
+import { useEffect, useState } from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function UserHome() {
+  const router = useRouter(); // For navigation
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
 
@@ -46,6 +48,14 @@ export default function UserHome() {
           <Text style={styles.buttonText}>Scan Again</Text>
         </TouchableOpacity>
       )}
+
+      {/* New button for user profile */}
+      <TouchableOpacity
+        style={styles.profileButton}
+        onPress={() => router.push('/user-profile')}
+      >
+        <Text style={styles.profileButtonText}>Or go to user profile</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -82,5 +92,16 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+  profileButton: {
+    position: 'absolute',
+    bottom: 40,  // Not too bottom
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  profileButtonText: {
+    color: '#ff6f00',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
