@@ -1,16 +1,54 @@
+import { Asset } from 'expo-asset';
 import { useRouter } from 'expo-router';
-import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import ForkcastLogo from '../assets/images/Forkcast-logo-white.png';
 
 export default function LandingScreen() {
   const router = useRouter();
+  const [isReady, setIsReady] = useState(false);
+
+  // Animated value for drop down
+  const slideAnim = useRef(new Animated.Value(-200)).current; // start 200 above
+
+  // Preload image before rendering
+  useEffect(() => {
+    async function load() {
+      await Asset.loadAsync(require('../assets/images/landingpage-bg.png'));
+      setIsReady(true);
+    }
+    load();
+
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 1000,  // 1 second animation
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  if (!isReady) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#ff6f00" />
+      </View>
+    );
+  }
 
   return (
     <ImageBackground
-      source={require('../assets/images/restaurant-bg.jpg')} 
+      source={require('../assets/images/landingpage-bg.png')}
       style={styles.background}
       resizeMode="cover"
+      blurRadius={3}
     >
       <View style={styles.overlay}>
+        {/* Animated logo */}
+        <Animated.Image
+          source={ForkcastLogo}
+          style={[styles.logo, { transform: [{ translateY: slideAnim }] }]}
+          resizeMode="contain"
+        />
+
         <Text style={styles.title}>Scan. Order. Enjoy.</Text>
         <Text style={styles.subtitle}>
           Discover the easiest way to dine! Just scan the QR code on your table,
@@ -26,17 +64,22 @@ export default function LandingScreen() {
 
         <TouchableOpacity
           style={[styles.button, styles.adminButton]}
-          onPress={() => router.push('/login')}  // updated path here
-         >
-         <Text style={styles.buttonText}>Continue as Admin</Text>
+          onPress={() => router.push('/login')}
+        >
+          <Text style={styles.buttonText}>Continue as Admin</Text>
         </TouchableOpacity>
-
       </View>
     </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000', // or any background you prefer while loading
+  },
   background: {
     flex: 1,
     justifyContent: 'center',
@@ -47,6 +90,12 @@ const styles = StyleSheet.create({
     margin: 20,
     borderRadius: 20,
     alignItems: 'center',
+  },
+  logo: {
+    width: 440,
+    height: 280,
+    alignSelf: 'center',
+    marginLeft: 20,
   },
   title: {
     fontSize: 32,
@@ -60,6 +109,7 @@ const styles = StyleSheet.create({
     color: '#ddd',
     textAlign: 'center',
     marginBottom: 30,
+    lineHeight: 22,
   },
   button: {
     backgroundColor: '#ff6f00',

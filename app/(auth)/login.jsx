@@ -112,9 +112,9 @@ logoWrapper: {
   marginTop: -24, // optional: lift it higher if needed
 },
 logo: {
-  width: 220,     // bigger and better
-  height: 120,
-  marginLeft: -15, // adjusts for logo imbalance
+  width: 480,     // bigger and better
+  height: 280,
+  marginLeft: 15, // adjusts for logo imbalance
 },
 
   title: {
