@@ -1,7 +1,16 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Asset } from 'expo-asset';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Animated,
+  ImageBackground,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import ForkcastLogo from '../assets/images/Forkcast-logo-white.png';
 
 export default function LandingScreen() {
@@ -9,19 +18,36 @@ export default function LandingScreen() {
   const [isReady, setIsReady] = useState(false);
 
   // Animated value for drop down
-  const slideAnim = useRef(new Animated.Value(-200)).current; // start 200 above
+  const slideAnim = useRef(new Animated.Value(-200)).current;
 
-  // Preload image before rendering
   useEffect(() => {
-    async function load() {
+    const preloadAndRedirect = async () => {
       await Asset.loadAsync(require('../assets/images/landingpage-bg.png'));
-      setIsReady(true);
-    }
-    load();
+
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        const userData = await AsyncStorage.getItem('userData');
+        const role = userData ? JSON.parse(userData).role?.name?.toLowerCase() : null;
+
+        if (token && role === 'admin') {
+          router.replace('/(admin)/admin-home');
+          return;
+        } else if (token && role === 'customer') {
+          router.replace('/(user)/user-home');
+          return;
+        }
+      } catch (err) {
+        console.error('Token check failed:', err);
+      }
+
+      setIsReady(true); // only show landing if not auto-redirected
+    };
+
+    preloadAndRedirect();
 
     Animated.timing(slideAnim, {
       toValue: 0,
-      duration: 1000,  // 1 second animation
+      duration: 1000,
       useNativeDriver: true,
     }).start();
   }, []);
@@ -42,7 +68,6 @@ export default function LandingScreen() {
       blurRadius={3}
     >
       <View style={styles.overlay}>
-        {/* Animated logo */}
         <Animated.Image
           source={ForkcastLogo}
           style={[styles.logo, { transform: [{ translateY: slideAnim }] }]}
@@ -57,7 +82,7 @@ export default function LandingScreen() {
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() => router.push('/user-home')}
+          onPress={() => router.push('/(user)/user-home')}
         >
           <Text style={styles.buttonText}>Continue as User</Text>
         </TouchableOpacity>
@@ -78,7 +103,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000', // or any background you prefer while loading
+    backgroundColor: '#000',
   },
   background: {
     flex: 1,

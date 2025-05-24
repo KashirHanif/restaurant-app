@@ -1,7 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Alert,
   Image,
@@ -40,7 +40,7 @@ const handleLogin = async () => {
   }
 
   try {
-    const response = await fetch('http://192.168.100.98:1337/api/auth/local', {
+    const response = await fetch('http://192.168.100.92:1337/api/auth/local', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
