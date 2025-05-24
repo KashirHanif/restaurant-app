@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Alert,
   Image,
@@ -25,20 +26,52 @@ export default function Login() {
   const validateEmail = (email) =>
     /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(email);
 
-  const handleLogin = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (!validateEmail(email)) {
-      setError('Please enter a valid email.');
-      return;
+
+const handleLogin = async () => {
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+  if (!validateEmail(email)) {
+    setError('Please enter a valid email.');
+    return;
+  }
+  if (password.length < 6) {
+    setError('Password must be at least 6 characters.');
+    return;
+  }
+
+  try {
+    const response = await fetch('http://192.168.100.98:1337/api/auth/local', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        identifier: email,
+        password: password,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data?.error?.message || 'Login failed');
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      return;
-    }
+
+    console.log(data);
+    const { jwt, user } = data;
+
+    // Save JWT and user info
+    await AsyncStorage.setItem('userToken', jwt);
+    await AsyncStorage.setItem('userData', JSON.stringify(user));
+
     setError('');
-    Alert.alert('Success', 'Logged in!');
-    router.replace('/user-home');
-  };
+    Alert.alert("Login successful!")
+  } catch (err) {
+    console.error(err);
+    setError(err.message || 'Something went wrong');
+  }
+};
+
 
   return (
     <KeyboardAvoidingView
