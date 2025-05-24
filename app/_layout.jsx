@@ -5,39 +5,35 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 export default function Layout() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
-    const checkAuthAndRedirect = async () => {
+    const checkToken = async () => {
       try {
         const token = await AsyncStorage.getItem('userToken');
         const userData = await AsyncStorage.getItem('userData');
+        const role = userData ? JSON.parse(userData).role?.name?.toLowerCase() : null;
 
-        if (token && userData) {
-          const user = JSON.parse(userData);
-          const role = user?.role?.name?.toLowerCase();
-
-          if (role === 'admin') {
-            router.push('/(admin)/admin-home');
-            return;
-          } else {
-            router.push('/(user)/user-home');
-            return;
-          }
+        if (token && role === 'admin') {
+          router.replace('/(admin)/admin-home');
+          return;
+        } else if (token && role === 'customer') {
+          router.replace('/(user)/user-home');
+          return;
         }
-      } catch (error) {
-        console.error('Error reading from AsyncStorage:', error);
+      } catch (err) {
+        console.error('Token check failed:', err);
       } finally {
-        setLoading(false);
+        setCheckingAuth(false);
       }
     };
 
-    checkAuthAndRedirect();
+    checkToken();
   }, []);
 
-  if (loading) {
+  if (checkingAuth) {
     return (
-      <View style={styles.loader}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#6a994e" />
       </View>
     );
@@ -54,7 +50,7 @@ export default function Layout() {
 }
 
 const styles = StyleSheet.create({
-  loader: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
