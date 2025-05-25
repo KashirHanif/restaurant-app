@@ -13,6 +13,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
+
 
 export default function Menu() {
   const [items, setItems] = useState([]);
@@ -24,6 +26,9 @@ export default function Menu() {
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
+
+  const router = useRouter();
+
 
   useEffect(() => {
     fetchMenuItems();
@@ -39,35 +44,30 @@ export default function Menu() {
     return 'Unknown error occurred';
   };
 
- const fetchMenuItems = async () => {
+const fetchMenuItems = async () => {
   setLoading(true);
   try {
     const token = await AsyncStorage.getItem('userToken');
     if (!token) {
       Alert.alert('Error', 'User not authenticated');
-      setLoading(false);
       return;
     }
 
     const response = await fetch('http://192.168.100.98:1337/api/menu-items', {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     const result = await response.json();
     console.log('📦 Full response:', JSON.stringify(result, null, 2));
 
     if (response.ok && Array.isArray(result.data)) {
-      // ✅ No attributes wrapper – use values directly
       const items = result.data.map((item) => ({
         id: item.id,
-        documentId: item.documentId,
         name: item.name || '',
         price: item.price || '',
         category: item.category || '',
-        description: item.description || '',
+        description: item.description || [],
+        documentId: item.documentId,
       }));
       setItems(items);
     } else {
@@ -76,10 +76,10 @@ export default function Menu() {
   } catch (error) {
     Alert.alert('Error', 'Unable to fetch menu items');
     console.error(error);
+  } finally {
+    setLoading(false);
   }
-  setLoading(false);
 };
-
 
 
   const resetForm = () => {
@@ -91,28 +91,49 @@ export default function Menu() {
     setEditIndex(null);
   };
 
- const handleAddOrUpdate = async () => {
+const handleAddOrUpdate = async () => {
   if (!name.trim() || !price.trim()) {
     Alert.alert('Validation', 'Please enter at least name and price.');
     return;
   }
 
-  setLoading(true);
   const token = await AsyncStorage.getItem('userToken');
-  if (!token) {
-    Alert.alert('Error', 'User not authenticated');
-    setLoading(false);
+  const restaurantData = await AsyncStorage.getItem('restaurantData');
+  console.log('Restaurant data : ',restaurantData);
+
+  if (!token || !restaurantData) {
+    Alert.alert(
+      'Profile Missing',
+      'Please complete your restaurant profile first.',
+      [{ text: 'Go to Profile', onPress: () => router.replace('/admin-profile') }]
+    );
     return;
   }
 
-  const itemData = { name, price, category, description };
+  const { id: restaurantId } = JSON.parse(restaurantData);
+  setLoading(true);
+
+  const itemData = {
+    name,
+    price: Number(price),
+    category,
+    description: description
+      ? [
+          {
+            type: 'paragraph',
+            children: [{ type: 'text', text: description }],
+          },
+        ]
+      : [],
+    restaurant: restaurantId, // ✅ Added restaurant relation here
+  };
 
   try {
     let response, result;
 
     if (editIndex !== null) {
-      const item = items[editIndex];
-      const itemId = item?.id;
+      const itemId = items[editIndex]?.documentId;
+      console.log('Updating item with ID:', itemId);
 
       response = await fetch(`http://192.168.100.98:1337/api/menu-items/${itemId}`, {
         method: 'PUT',
@@ -127,7 +148,7 @@ export default function Menu() {
 
       if (response.ok) {
         Alert.alert('Success', 'Menu item updated');
-        await fetchMenuItems(); // ✅ refetch fresh data from backend
+        await fetchMenuItems();
       } else {
         Alert.alert('Error', result.error?.message || 'Update failed');
       }
@@ -145,7 +166,7 @@ export default function Menu() {
 
       if (response.ok) {
         Alert.alert('Success', 'Menu item added');
-        await fetchMenuItems(); // ✅ refetch fresh data from backend
+        await fetchMenuItems();
       } else {
         Alert.alert('Error', result.error?.message || 'Creation failed');
       }
@@ -160,16 +181,29 @@ export default function Menu() {
 };
 
 
+const handleEdit = (index) => {
+  const item = items[index];
+  console.log("Editing item:", item); // Debug log
+  setName(item.name);
+  setPrice(String(item.price));
+  setCategory(item.category || '');
+  const richText = item.description;
+  let plainDescription = '';
+  if (Array.isArray(richText)) {
+    plainDescription = richText
+      .map((block) =>
+        Array.isArray(block.children)
+          ? block.children.map((child) => child.text).join('')
+          : ''
+      )
+      .join('\n');
+  }
 
-  const handleEdit = (index) => {
-    const item = items[index];
-    setName(item.name);
-    setPrice(String(item.price));
-    setCategory(item.category || '');
-    setDescription(item.description || '');
-    setEditIndex(index);
-    setIsAdding(true);
-  };
+  setDescription(plainDescription);
+  setEditIndex(index); // We'll use index later to get correct ID
+  setIsAdding(true);
+};
+
 
   const handleDelete = (index) => {
     Alert.alert(
@@ -187,47 +221,39 @@ export default function Menu() {
   };
 
 const deleteMenuItem = async (index) => {
-  setLoading(true);
+  const itemId = items[index]?.documentId;
+  const restaurantData = await AsyncStorage.getItem('restaurantData');
+  const restaurantId = restaurantData ? JSON.parse(restaurantData)?.id : null;
+
+  if (!itemId || !restaurantId) {
+    Alert.alert('Error', 'Missing item or restaurant ID');
+    return;
+  }
 
   const token = await AsyncStorage.getItem('userToken');
   if (!token) {
     Alert.alert('Error', 'User not authenticated');
-    setLoading(false);
-    return;
-  }
-
-  const item = items[index];
-  const itemId = item?.id;
-
-  if (!itemId || typeof itemId !== 'number') {
-    Alert.alert('Error', 'Invalid item ID for deletion');
-    setLoading(false);
     return;
   }
 
   try {
     const response = await fetch(`http://192.168.100.98:1337/api/menu-items/${itemId}`, {
       method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (response.status === 204) {
-      Alert.alert('Success', 'Menu item deleted');
-      await fetchMenuItems(); // ✅ fetch fresh state
+      Alert.alert('Deleted', 'Menu item deleted');
+      fetchMenuItems();
     } else {
       const result = await response.json();
       Alert.alert('Error', result.error?.message || 'Delete failed');
     }
-  } catch (error) {
-    Alert.alert('Error', 'Server error while deleting');
-    console.error(error);
+  } catch (err) {
+    Alert.alert('Error', 'Server error');
+    console.error(err);
   }
-
-  setLoading(false);
 };
-
 
 
   const renderItem = ({ item, index }) => (
@@ -236,7 +262,16 @@ const deleteMenuItem = async (index) => {
         <Text style={styles.cardTitle}>{item.name}</Text>
         <Text style={styles.cardText}>Price: ₹{item.price}</Text>
         {item.category ? <Text style={styles.cardText}>Category: {item.category}</Text> : null}
-        {item.description ? <Text style={styles.cardText}>{item.description}</Text> : null}
+        {Array.isArray(item.description) && item.description.length > 0 && (
+      <Text style={styles.cardText}>
+        {item.description
+          .map((block) =>
+            block?.children?.map((child) => child.text).join('')
+          )
+          .join('\n')}
+      </Text>
+    )}
+
       </View>
       <View style={styles.cardButtons}>
         <TouchableOpacity style={styles.editButton} onPress={() => handleEdit(index)}>
@@ -270,14 +305,36 @@ const deleteMenuItem = async (index) => {
         <>
           <FlatList
             data={items}
-            keyExtractor={(item, i) => item.id?.toString() || i.toString()}
+            keyExtractor={(item) => item.id.toString()}
             renderItem={renderItem}
             ListEmptyComponent={ListEmptyComponent}
             contentContainerStyle={items.length === 0 ? styles.flatListEmpty : { padding: 24, paddingBottom: 96 }}
             showsVerticalScrollIndicator={false}
           />
-          <TouchableOpacity style={styles.fab} onPress={() => setIsAdding(true)} activeOpacity={0.7}>
-            <Ionicons name="add" size={28} color="#fff" />
+          <TouchableOpacity
+              style={styles.fab}
+              onPress={async () => {
+                const restaurantData = await AsyncStorage.getItem('restaurantData');
+                if (!restaurantData) {
+                  Alert.alert(
+                    'Complete Profile',
+                    'Please set your profile before adding menu items.',
+                    [
+                      {
+                        text: 'Go to Profile',
+                        onPress: () => router.replace('/(admin)/admin-profile'),
+                      },
+                      { text: 'Cancel', style: 'cancel' },
+                    ]
+                  );
+                  return;
+                }
+
+                setIsAdding(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add" size={28} color="#fff" />
           </TouchableOpacity>
         </>
       ) : (

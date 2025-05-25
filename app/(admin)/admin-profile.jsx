@@ -17,24 +17,36 @@ export default function AdminProfile() {
   const [tables, setTables] = useState('');
   const [error, setError] = useState('');
   const [username, setUsername] = useState('');
+  const [userId, setUserId] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchStoredData = async () => {
       try {
         const userData = await AsyncStorage.getItem('userData');
+        const restaurantData = await AsyncStorage.getItem('restaurantData');
+
         if (userData) {
-          const user = JSON.parse(userData);
-          setUsername(user.username || '');
+          const parsedUser = JSON.parse(userData);
+          setUsername(parsedUser.username || '');
+          setUserId(parsedUser.id); // Save user ID
+        }
+
+        if (restaurantData) {
+          const parsedRestaurant = JSON.parse(restaurantData);
+          setRestaurantName(parsedRestaurant.attributes?.name || '');
+          setLocation(parsedRestaurant.attributes?.location || '');
+          setTables(parsedRestaurant.attributes?.numberOfTables?.toString() || '');
         }
       } catch (e) {
-        console.error('Failed to load user data:', e);
+        console.error('Failed to load stored data:', e);
       }
     };
 
-    fetchUser();
+    fetchStoredData();
   }, []);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!restaurantName.trim() || !location.trim() || !tables.trim()) {
       setError('Please fill all fields');
       return;
@@ -43,9 +55,58 @@ export default function AdminProfile() {
       setError('Number of tables must be a positive number');
       return;
     }
+
     setError('');
-    Alert.alert('Success', 'Profile saved successfully!');
+    setLoading(true);
+
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        Alert.alert('Error', 'User not authenticated');
+        setLoading(false);
+        return;
+      }
+
+      const payload = {
+        data: {
+          name: restaurantName,
+          location,
+          number_of_tables: Number(tables),
+          owner: userId,
+        },
+      };
+
+      const response = await fetch('http://192.168.100.98:1337/api/restaurants', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        await AsyncStorage.setItem('restaurantData', JSON.stringify(result.data));
+        Alert.alert('Success', 'Profile saved successfully!');
+      } else {
+        Alert.alert('Error', result.error?.message || 'Failed to save restaurant');
+      }
+    } catch (e) {
+      console.error('Save error:', e);
+      Alert.alert('Error', 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const isSaveDisabled =
+    !restaurantName.trim() ||
+    !location.trim() ||
+    !tables.trim() ||
+    isNaN(tables) ||
+    Number(tables) <= 0;
 
   return (
     <KeyboardAvoidingView
@@ -53,8 +114,7 @@ export default function AdminProfile() {
       style={{ flex: 1, backgroundColor: '#fffaf3' }}
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={styles.welcomeText}>Welcome, {username ? username : 'Admin'}!</Text>
-
+        <Text style={styles.welcomeText}>Welcome, {username || 'Admin'}!</Text>
         <Text style={styles.heading}>Setup Restaurant Profile</Text>
 
         <TextInput
@@ -64,7 +124,6 @@ export default function AdminProfile() {
           onChangeText={setRestaurantName}
           placeholderTextColor="#888"
         />
-
         <TextInput
           placeholder="Location"
           style={styles.input}
@@ -72,7 +131,6 @@ export default function AdminProfile() {
           onChangeText={setLocation}
           placeholderTextColor="#888"
         />
-
         <TextInput
           placeholder="Number of Tables"
           style={styles.input}
@@ -84,7 +142,11 @@ export default function AdminProfile() {
 
         {!!error && <Text style={styles.error}>{error}</Text>}
 
-        <TouchableOpacity style={styles.button} onPress={handleSave}>
+        <TouchableOpacity
+          style={[styles.button, isSaveDisabled && { backgroundColor: '#ccc' }]}
+          onPress={handleSave}
+          disabled={isSaveDisabled || loading}
+        >
           <Text style={styles.buttonText}>Save Profile</Text>
         </TouchableOpacity>
       </ScrollView>
