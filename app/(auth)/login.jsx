@@ -3,15 +3,14 @@ import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import ForkcastLogo from '../../assets/images/Forkcast-logo.png';
 
@@ -24,7 +23,7 @@ export default function Login() {
   const [focusedField, setFocusedField] = useState(null);
 
   const validateEmail = (email) =>
-    /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(email);
+    /^\w+([.-]?\w+)@\w+([.-]?\w+)(\.\w{2,3})+$/.test(email);
 
 
 const handleLogin = async () => {
@@ -40,7 +39,7 @@ const handleLogin = async () => {
   }
 
   try {
-    const response = await fetch('http://192.168.100.92:1337/api/auth/local', {
+    const response = await fetch('http://192.168.100.98:1337/api/auth/local/custom-login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -65,7 +64,7 @@ const handleLogin = async () => {
     await AsyncStorage.setItem('userData', JSON.stringify(user));
 
     setError('');
-    Alert.alert("Login successful!")
+    router.replace('/(admin)/admin-home');
   } catch (err) {
     console.error(err);
     setError(err.message || 'Something went wrong');
