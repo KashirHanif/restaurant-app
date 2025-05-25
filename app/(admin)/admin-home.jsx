@@ -1,9 +1,25 @@
-import { StyleSheet, Text, View } from 'react-native';
+// app/(admin)/admin-home.jsx
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
+import { Button, Image, StyleSheet, Text, View } from 'react-native';
 
 export default function AdminHome() {
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('userToken');
+    await AsyncStorage.removeItem('userData');
+    router.replace('/');
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>admin-home</Text>
+      <View style={styles.header}>
+        <Button title="Logout" onPress={handleLogout} color="#6a994e" />
+      </View>
+      <Image source={require('../../assets/images/Forkcast-logo.png')} style={styles.logo} />
+      <Text style={styles.text}>Home page: analytics not currently available.</Text>
     </View>
   );
 }
@@ -11,13 +27,23 @@ export default function AdminHome() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fffaf3',
-    justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 60,
+    backgroundColor: '#fff',
+  },
+  header: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+  },
+  logo: {
+    width: 200,
+    height: 200,
+    opacity: 0.1,
+    marginBottom: 20,
   },
   text: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#3e403f',
+    fontSize: 16,
+    color: '#333',
   },
 });

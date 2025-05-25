@@ -1,11 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useEffect } from 'react';
 
 export default function Layout() {
   const router = useRouter();
-  const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
     const checkToken = async () => {
@@ -15,29 +13,18 @@ export default function Layout() {
         const role = userData ? JSON.parse(userData).role?.name?.toLowerCase() : null;
 
         if (token && role === 'admin') {
-          router.replace('/(admin)/admin-home');
-          return;
-        } else if (token && role === 'customer') {
-          router.replace('/(user)/user-home');
-          return;
+          router.push('/(admin)/admin-home');
+        } else if (token && role === 'customer') { 
+          router.push('/(user)/user-home');
         }
+        // If no token, do nothing — stay on landing page (index)
       } catch (err) {
         console.error('Token check failed:', err);
-      } finally {
-        setCheckingAuth(false);
-      }
+      }  
     };
 
     checkToken();
   }, []);
-
-  if (checkingAuth) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#6a994e" />
-      </View>
-    );
-  }
 
   return (
     <Stack>
@@ -48,11 +35,3 @@ export default function Layout() {
     </Stack>
   );
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
