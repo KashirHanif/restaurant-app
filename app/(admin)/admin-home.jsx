@@ -10,6 +10,7 @@ export default function AdminHome() {
   const handleLogout = async () => {
     await AsyncStorage.removeItem('userToken');
     await AsyncStorage.removeItem('userData');
+    await AsyncStorage.removeItem('restaurantData');
     router.replace('/');
   };
 

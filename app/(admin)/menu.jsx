@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -10,17 +10,77 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Menu() {
   const [items, setItems] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
+
+  useEffect(() => {
+    fetchMenuItems();
+  }, []);
+
+  const getErrorMessage = (error) => {
+    if (typeof error === 'string') return error;
+    if (typeof error === 'object') {
+      if (error.message) return error.message;
+      if (error.error && typeof error.error === 'string') return error.error;
+      return JSON.stringify(error);
+    }
+    return 'Unknown error occurred';
+  };
+
+ const fetchMenuItems = async () => {
+  setLoading(true);
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) {
+      Alert.alert('Error', 'User not authenticated');
+      setLoading(false);
+      return;
+    }
+
+    const response = await fetch('http://192.168.100.98:1337/api/menu-items', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const result = await response.json();
+    console.log('📦 Full response:', JSON.stringify(result, null, 2));
+
+    if (response.ok && Array.isArray(result.data)) {
+      // ✅ No attributes wrapper – use values directly
+      const items = result.data.map((item) => ({
+        id: item.id,
+        documentId: item.documentId,
+        name: item.name || '',
+        price: item.price || '',
+        category: item.category || '',
+        description: item.description || '',
+      }));
+      setItems(items);
+    } else {
+      Alert.alert('Error', result.error?.message || 'Failed to fetch menu items');
+    }
+  } catch (error) {
+    Alert.alert('Error', 'Unable to fetch menu items');
+    console.error(error);
+  }
+  setLoading(false);
+};
+
+
 
   const resetForm = () => {
     setName('');
@@ -31,32 +91,82 @@ export default function Menu() {
     setEditIndex(null);
   };
 
-  const handleAddOrUpdate = () => {
-    if (!name.trim() || !price.trim()) {
-      Alert.alert('Validation', 'Please enter at least name and price.');
-      return;
-    }
+ const handleAddOrUpdate = async () => {
+  if (!name.trim() || !price.trim()) {
+    Alert.alert('Validation', 'Please enter at least name and price.');
+    return;
+  }
 
-    const newItem = { name, price, category, description };
+  setLoading(true);
+  const token = await AsyncStorage.getItem('userToken');
+  if (!token) {
+    Alert.alert('Error', 'User not authenticated');
+    setLoading(false);
+    return;
+  }
+
+  const itemData = { name, price, category, description };
+
+  try {
+    let response, result;
 
     if (editIndex !== null) {
-      const updatedItems = [...items];
-      updatedItems[editIndex] = newItem;
-      setItems(updatedItems);
-      Alert.alert('Success', 'Menu item updated');
+      const item = items[editIndex];
+      const itemId = item?.id;
+
+      response = await fetch(`http://192.168.100.98:1337/api/menu-items/${itemId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ data: itemData }),
+      });
+
+      result = await response.json();
+
+      if (response.ok) {
+        Alert.alert('Success', 'Menu item updated');
+        await fetchMenuItems(); // ✅ refetch fresh data from backend
+      } else {
+        Alert.alert('Error', result.error?.message || 'Update failed');
+      }
     } else {
-      setItems([...items, newItem]);
-      Alert.alert('Success', 'Menu item added');
+      response = await fetch('http://192.168.100.98:1337/api/menu-items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ data: itemData }),
+      });
+
+      result = await response.json();
+
+      if (response.ok) {
+        Alert.alert('Success', 'Menu item added');
+        await fetchMenuItems(); // ✅ refetch fresh data from backend
+      } else {
+        Alert.alert('Error', result.error?.message || 'Creation failed');
+      }
     }
-    resetForm();
-  };
+  } catch (error) {
+    Alert.alert('Error', 'Server error while saving');
+    console.error(error);
+  }
+
+  setLoading(false);
+  resetForm();
+};
+
+
 
   const handleEdit = (index) => {
     const item = items[index];
     setName(item.name);
-    setPrice(item.price);
-    setCategory(item.category);
-    setDescription(item.description);
+    setPrice(String(item.price));
+    setCategory(item.category || '');
+    setDescription(item.description || '');
     setEditIndex(index);
     setIsAdding(true);
   };
@@ -70,14 +180,55 @@ export default function Menu() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            const filteredItems = items.filter((_, i) => i !== index);
-            setItems(filteredItems);
-          },
+          onPress: () => deleteMenuItem(index),
         },
       ]
     );
   };
+
+const deleteMenuItem = async (index) => {
+  setLoading(true);
+
+  const token = await AsyncStorage.getItem('userToken');
+  if (!token) {
+    Alert.alert('Error', 'User not authenticated');
+    setLoading(false);
+    return;
+  }
+
+  const item = items[index];
+  const itemId = item?.id;
+
+  if (!itemId || typeof itemId !== 'number') {
+    Alert.alert('Error', 'Invalid item ID for deletion');
+    setLoading(false);
+    return;
+  }
+
+  try {
+    const response = await fetch(`http://192.168.100.98:1337/api/menu-items/${itemId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.status === 204) {
+      Alert.alert('Success', 'Menu item deleted');
+      await fetchMenuItems(); // ✅ fetch fresh state
+    } else {
+      const result = await response.json();
+      Alert.alert('Error', result.error?.message || 'Delete failed');
+    }
+  } catch (error) {
+    Alert.alert('Error', 'Server error while deleting');
+    console.error(error);
+  }
+
+  setLoading(false);
+};
+
+
 
   const renderItem = ({ item, index }) => (
     <View style={styles.card}>
@@ -109,23 +260,23 @@ export default function Menu() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={{ flex: 1, backgroundColor: '#fffaf3' }}
     >
+      {loading && (
+        <View style={{ position: 'absolute', top: '50%', left: '50%', marginLeft: -20, marginTop: -20, zIndex: 10 }}>
+          <ActivityIndicator size="large" color="#6a994e" />
+        </View>
+      )}
+
       {!isAdding ? (
         <>
           <FlatList
             data={items}
-            keyExtractor={(_, i) => i.toString()}
+            keyExtractor={(item, i) => item.id?.toString() || i.toString()}
             renderItem={renderItem}
             ListEmptyComponent={ListEmptyComponent}
             contentContainerStyle={items.length === 0 ? styles.flatListEmpty : { padding: 24, paddingBottom: 96 }}
             showsVerticalScrollIndicator={false}
           />
-
-          {/* Floating Add Button */}
-          <TouchableOpacity
-            style={styles.fab}
-            onPress={() => setIsAdding(true)}
-            activeOpacity={0.7}
-          >
+          <TouchableOpacity style={styles.fab} onPress={() => setIsAdding(true)} activeOpacity={0.7}>
             <Ionicons name="add" size={28} color="#fff" />
           </TouchableOpacity>
         </>
@@ -142,7 +293,6 @@ export default function Menu() {
             onChangeText={setName}
             placeholderTextColor="#888"
           />
-
           <TextInput
             placeholder="Price"
             style={styles.input}
@@ -151,7 +301,6 @@ export default function Menu() {
             keyboardType="numeric"
             placeholderTextColor="#888"
           />
-
           <TextInput
             placeholder="Category"
             style={styles.input}
@@ -159,7 +308,6 @@ export default function Menu() {
             onChangeText={setCategory}
             placeholderTextColor="#888"
           />
-
           <TextInput
             placeholder="Description"
             style={[styles.input, styles.textArea]}
@@ -169,12 +317,10 @@ export default function Menu() {
             numberOfLines={4}
             placeholderTextColor="#888"
           />
-
-          <TouchableOpacity style={styles.saveButton} onPress={handleAddOrUpdate}>
+          <TouchableOpacity style={styles.saveButton} onPress={handleAddOrUpdate} disabled={loading}>
             <Text style={styles.saveButtonText}>{editIndex !== null ? 'Update' : 'Add'}</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity onPress={resetForm}>
+          <TouchableOpacity onPress={resetForm} disabled={loading}>
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
         </View>

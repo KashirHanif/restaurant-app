@@ -3,14 +3,14 @@ import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import ForkcastLogo from '../../assets/images/Forkcast-logo.png';
 
@@ -26,50 +26,55 @@ export default function Login() {
     /^\w+([.-]?\w+)@\w+([.-]?\w+)(\.\w{2,3})+$/.test(email);
 
 
-const handleLogin = async () => {
-  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const handleLogin = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-  if (!validateEmail(email)) {
-    setError('Please enter a valid email.');
-    return;
-  }
-  if (password.length < 6) {
-    setError('Password must be at least 6 characters.');
-    return;
-  }
-
-  try {
-    const response = await fetch('http://192.168.100.92:1337/api/auth/local/custom-login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        identifier: email,
-        password: password,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data?.error?.message || 'Login failed');
+    if (!validateEmail(email)) {
+        setError('Please enter a valid email.');
+        return;
+    }
+    if (password.length < 6) {
+        setError('Password must be at least 6 characters.');
+        return;
     }
 
-    console.log(data);
-    const { jwt, user } = data;
+    try {
+        const response = await fetch('http://192.168.100.98:1337/api/auth/local/custom-login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            identifier: email,
+            password: password,
+        }),
+        });
 
-    // Save JWT and user info
-    await AsyncStorage.setItem('userToken', jwt);
-    await AsyncStorage.setItem('userData', JSON.stringify(user));
+        const data = await response.json();
 
-    setError('');
-    router.replace('/(admin)/admin-home');
-  } catch (err) {
-    console.error(err);
-    setError(err.message || 'Something went wrong');
-  }
-};
+        if (!response.ok) {
+        throw new Error(data?.error?.message || 'Login failed');
+        }
+
+        const { jwt, user, restaurant } = data;
+
+        await AsyncStorage.setItem('userToken', jwt);
+        await AsyncStorage.setItem('userData', JSON.stringify(user));
+
+        if (restaurant) {
+            await AsyncStorage.setItem('restaurantData', JSON.stringify(restaurant));
+        } else {
+            await AsyncStorage.removeItem('restaurantData');
+        }
+
+        setError('');
+        router.replace('/(admin)/admin-home');
+    } catch (err) {
+        console.error(err);
+        setError(err.message || 'Something went wrong');
+    }
+    };
+
 
 
   return (
