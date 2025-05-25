@@ -43,7 +43,7 @@ export default function Signup() {
   }
 
   try {
-    const response = await fetch('http://192.168.100.98:1337/api/auth/custom-register', {
+    const response = await fetch('http://192.168.100.92:1337/api/auth/custom-register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
