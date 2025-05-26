@@ -63,6 +63,7 @@ export default function Login() {
 
         if (restaurant) {
             await AsyncStorage.setItem('restaurantData', JSON.stringify(restaurant));
+
         } else {
             await AsyncStorage.removeItem('restaurantData');
         }

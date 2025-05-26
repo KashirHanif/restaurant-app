@@ -48,17 +48,19 @@ const fetchMenuItems = async () => {
   setLoading(true);
   try {
     const token = await AsyncStorage.getItem('userToken');
+    const restaurantData = await AsyncStorage.getItem('restaurantData');
+    const parsedRestaurant = JSON.parse(restaurantData);
+    const restaurantId = parsedRestaurant?.documentId;
     if (!token) {
       Alert.alert('Error', 'User not authenticated');
       return;
     }
 
-    const response = await fetch('http://192.168.100.98:1337/api/menu-items', {
+    const response = await fetch(`http://192.168.100.98:1337/api/menu-items?filters[restaurant][documentId][$eq]=${restaurantId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
     const result = await response.json();
-    console.log('📦 Full response:', JSON.stringify(result, null, 2));
 
     if (response.ok && Array.isArray(result.data)) {
       const items = result.data.map((item) => ({
@@ -99,7 +101,6 @@ const handleAddOrUpdate = async () => {
 
   const token = await AsyncStorage.getItem('userToken');
   const restaurantData = await AsyncStorage.getItem('restaurantData');
-  console.log('Restaurant data : ',restaurantData);
 
   if (!token || !restaurantData) {
     Alert.alert(
@@ -109,8 +110,8 @@ const handleAddOrUpdate = async () => {
     );
     return;
   }
-
-  const { id: restaurantId } = JSON.parse(restaurantData);
+  const parsedRestaurant = JSON.parse(restaurantData);
+  const restaurantId = parsedRestaurant?.documentId;
   setLoading(true);
 
   const itemData = {
@@ -125,7 +126,7 @@ const handleAddOrUpdate = async () => {
           },
         ]
       : [],
-    restaurant: restaurantId, // ✅ Added restaurant relation here
+    restaurant: restaurantId,
   };
 
   try {
@@ -133,7 +134,6 @@ const handleAddOrUpdate = async () => {
 
     if (editIndex !== null) {
       const itemId = items[editIndex]?.documentId;
-      console.log('Updating item with ID:', itemId);
 
       response = await fetch(`http://192.168.100.98:1337/api/menu-items/${itemId}`, {
         method: 'PUT',
@@ -183,7 +183,6 @@ const handleAddOrUpdate = async () => {
 
 const handleEdit = (index) => {
   const item = items[index];
-  console.log("Editing item:", item); // Debug log
   setName(item.name);
   setPrice(String(item.price));
   setCategory(item.category || '');

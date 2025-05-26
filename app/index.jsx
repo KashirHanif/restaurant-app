@@ -25,7 +25,6 @@ export default function Index() {
       try {
         const token = await AsyncStorage.getItem('userToken');
         const userData = await AsyncStorage.getItem('userData');
-        console.log(userData);
         const role = userData ? JSON.parse(userData).role?.toLowerCase() : null;
 
 

@@ -20,86 +20,98 @@ export default function AdminProfile() {
   const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchStoredData = async () => {
-      try {
-        const userData = await AsyncStorage.getItem('userData');
-        const restaurantData = await AsyncStorage.getItem('restaurantData');
+  const [restaurantId, setRestaurantId] = useState(null); // 🆕 store ID for PUT
 
-        if (userData) {
-          const parsedUser = JSON.parse(userData);
-          setUsername(parsedUser.username || '');
-          setUserId(parsedUser.id); // Save user ID
-        }
-
-        if (restaurantData) {
-          const parsedRestaurant = JSON.parse(restaurantData);
-          setRestaurantName(parsedRestaurant.attributes?.name || '');
-          setLocation(parsedRestaurant.attributes?.location || '');
-          setTables(parsedRestaurant.attributes?.numberOfTables?.toString() || '');
-        }
-      } catch (e) {
-        console.error('Failed to load stored data:', e);
-      }
-    };
-
-    fetchStoredData();
-  }, []);
-
-  const handleSave = async () => {
-    if (!restaurantName.trim() || !location.trim() || !tables.trim()) {
-      setError('Please fill all fields');
-      return;
-    }
-    if (isNaN(tables) || Number(tables) <= 0) {
-      setError('Number of tables must be a positive number');
-      return;
-    }
-
-    setError('');
-    setLoading(true);
-
+useEffect(() => {
+  const fetchStoredData = async () => {
     try {
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) {
-        Alert.alert('Error', 'User not authenticated');
-        setLoading(false);
-        return;
+      const userData = await AsyncStorage.getItem('userData');
+      const restaurantData = await AsyncStorage.getItem('restaurantData');
+
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
+        setUsername(parsedUser.username || '');
+        setUserId(parsedUser.id);
       }
 
-      const payload = {
-        data: {
-          name: restaurantName,
-          location,
-          number_of_tables: Number(tables),
-          owner: userId,
-        },
-      };
-
-      const response = await fetch('http://192.168.100.98:1337/api/restaurants', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        await AsyncStorage.setItem('restaurantData', JSON.stringify(result.data));
-        Alert.alert('Success', 'Profile saved successfully!');
-      } else {
-        Alert.alert('Error', result.error?.message || 'Failed to save restaurant');
+      if (restaurantData) {
+        const parsedRestaurant = JSON.parse(restaurantData);
+        setRestaurantId(parsedRestaurant?.documentId); // 🆕 Set restaurant ID
+        setRestaurantName(parsedRestaurant.name || '');
+        setLocation(parsedRestaurant.location || '');
+        setTables(parsedRestaurant.number_of_tables?.toString() || '');
       }
     } catch (e) {
-      console.error('Save error:', e);
-      Alert.alert('Error', 'Something went wrong');
-    } finally {
-      setLoading(false);
+      console.error('Failed to load stored data:', e);
     }
   };
+
+  fetchStoredData();
+}, []);
+
+
+  const handleSave = async () => {
+  if (!restaurantName.trim() || !location.trim() || !tables.trim()) {
+    setError('Please fill all fields');
+    return;
+  }
+  if (isNaN(tables) || Number(tables) <= 0) {
+    setError('Number of tables must be a positive number');
+    return;
+  }
+
+  setError('');
+  setLoading(true);
+
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) {
+      Alert.alert('Error', 'User not authenticated');
+      setLoading(false);
+      return;
+    }
+
+    const payload = {
+      data: {
+        name: restaurantName,
+        location,
+        number_of_tables: Number(tables),
+        owner: userId,
+      },
+    };
+
+    const url = restaurantId
+      ? `http://192.168.100.98:1337/api/restaurants/${restaurantId}` // PUT for existing
+      : 'http://192.168.100.98:1337/api/restaurants'; // POST for new
+
+    const method = restaurantId ? 'PUT' : 'POST';
+
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      await AsyncStorage.setItem('restaurantData', JSON.stringify(result.data));
+      Alert.alert('Success', restaurantId ? 'Profile updated!' : 'Profile saved successfully!');
+      setRestaurantId(result.data.id); // update after creation
+    } else {
+      Alert.alert('Error', result.error?.message || 'Failed to save restaurant');
+    }
+  } catch (e) {
+    console.error('Save error:', e);
+    Alert.alert('Error', 'Something went wrong');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const isSaveDisabled =
     !restaurantName.trim() ||
@@ -147,8 +159,11 @@ export default function AdminProfile() {
           onPress={handleSave}
           disabled={isSaveDisabled || loading}
         >
-          <Text style={styles.buttonText}>Save Profile</Text>
+          <Text style={styles.buttonText}>
+            {restaurantId ? 'Edit Profile' : 'Save Profile'}
+          </Text>
         </TouchableOpacity>
+
       </ScrollView>
     </KeyboardAvoidingView>
   );
