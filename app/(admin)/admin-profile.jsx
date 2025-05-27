@@ -100,7 +100,7 @@ useEffect(() => {
     if (response.ok) {
       await AsyncStorage.setItem('restaurantData', JSON.stringify(result.data));
       Alert.alert('Success', restaurantId ? 'Profile updated!' : 'Profile saved successfully!');
-      setRestaurantId(result.data.id); // update after creation
+      setRestaurantId(result.data.documentId); // update after creation
     } else {
       Alert.alert('Error', result.error?.message || 'Failed to save restaurant');
     }
