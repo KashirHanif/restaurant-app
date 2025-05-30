@@ -86,8 +86,8 @@ useEffect(() => {
 
     console.log(payload)
     const url = restaurantId
-      ? `http://10.135.50.188:1337/api/restaurants/${restaurantId}` // PUT for existing
-      : 'http://10.135.50.188:1337/api/restaurants'; // POST for new
+      ? `http://192.168.100.98:1337/api/restaurants/${restaurantId}` // PUT for existing
+      : 'http://192.168.100.98:1337/api/restaurants'; // POST for new
 
     const method = restaurantId ? 'PUT' : 'POST';
     console.log("Request sent type : ",method)

@@ -89,7 +89,7 @@ export default function Index() {
 
         <TouchableOpacity
           style={[styles.button, styles.adminButton]}
-          onPress={() => router.push('/login')}
+          onPress={() => router.push({pathname:'/login', params: { role : 'Admin' }})}
         >
           <Text style={styles.buttonText}>Continue as Admin</Text>
         </TouchableOpacity>

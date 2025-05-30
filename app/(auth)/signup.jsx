@@ -1,8 +1,6 @@
-import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -10,70 +8,22 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import ForkcastLogo from '../../assets/images/Forkcast-logo.png';
+import { useSignup } from '../../hooks/useSignup';
+import { useLocalSearchParams } from 'expo-router';
 
 export default function Signup() {
   const router = useRouter();
+  const { role = 'Customer' } = useLocalSearchParams();
 
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [focusedField, setFocusedField] = useState(null);
 
-  const validateEmail = (email) =>
-    /^\w+([.-]?\w+)@\w+([.-]?\w+)(\.\w{2,3})+$/.test(email);
-
- const handleSignup = async () => {
-  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-  if (!validateEmail(email)) {
-    setError('Please enter a valid email.');
-    return;
-  }
-  if (username.length < 3) {
-    setError('Username must be at least 3 characters.');
-    return;
-  }
-  if (password.length < 6) {
-    setError('Password must be at least 6 characters.');
-    return;
-  }
-
-  try {
-    const response = await fetch('http://10.135.50.188:1337/api/auth/custom-register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-     body: JSON.stringify({
-        username,
-        email,
-        password,
-        role: 'Admin',
-    }),
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      Alert.alert('Success', 'Admin account created!');
-      router.replace('/login');
-    } else {
-      console.log('Signup Error:', data);
-      setError(data?.error?.message || 'Signup failed. Please try again.');
-    }
-  } catch (error) {
-    console.error('Network Error:', error);
-    setError('Something went wrong. Please check your connection.');
-  }
-};
-
-
-
-
+  const { signup, error, setError } = useSignup();
 
   return (
     <KeyboardAvoidingView
@@ -88,14 +38,14 @@ export default function Signup() {
 
       <TextInput
         placeholder="Email"
-        style={[
-          styles.input,
-          focusedField === 'email' && styles.inputFocused,
-        ]}
+        style={[styles.input, focusedField === 'email' && styles.inputFocused]}
         keyboardType="email-address"
         autoCapitalize="none"
         value={email}
-        onChangeText={setEmail}
+        onChangeText={(val) => {
+          setEmail(val);
+          setError('');
+        }}
         onFocus={() => setFocusedField('email')}
         onBlur={() => setFocusedField(null)}
         placeholderTextColor="#888"
@@ -103,13 +53,13 @@ export default function Signup() {
 
       <TextInput
         placeholder="Username"
-        style={[
-          styles.input,
-          focusedField === 'username' && styles.inputFocused,
-        ]}
+        style={[styles.input, focusedField === 'username' && styles.inputFocused]}
         autoCapitalize="none"
         value={username}
-        onChangeText={setUsername}
+        onChangeText={(val) => {
+          setUsername(val);
+          setError('');
+        }}
         onFocus={() => setFocusedField('username')}
         onBlur={() => setFocusedField(null)}
         placeholderTextColor="#888"
@@ -117,13 +67,13 @@ export default function Signup() {
 
       <TextInput
         placeholder="Password"
-        style={[
-          styles.input,
-          focusedField === 'password' && styles.inputFocused,
-        ]}
+        style={[styles.input, focusedField === 'password' && styles.inputFocused]}
         secureTextEntry
         value={password}
-        onChangeText={setPassword}
+        onChangeText={(val) => {
+          setPassword(val);
+          setError('');
+        }}
         onFocus={() => setFocusedField('password')}
         onBlur={() => setFocusedField(null)}
         placeholderTextColor="#888"
@@ -131,7 +81,10 @@ export default function Signup() {
 
       {!!error && <Text style={styles.error}>{error}</Text>}
 
-      <TouchableOpacity style={styles.button} onPress={handleSignup}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => signup({ username, email, password, role: role })}
+      >
         <Text style={styles.buttonText}>Sign Up</Text>
       </TouchableOpacity>
 
@@ -143,6 +96,7 @@ export default function Signup() {
     </KeyboardAvoidingView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
