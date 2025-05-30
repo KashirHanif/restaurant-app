@@ -3,14 +3,14 @@ import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import ForkcastLogo from '../../assets/images/Forkcast-logo.png';
 
@@ -39,7 +39,7 @@ export default function Login() {
     }
 
     try {
-        const response = await fetch('http://192.168.100.98:1337/api/auth/local/custom-login', {
+        const response = await fetch('http://10.135.50.188:1337/api/auth/local/custom-login', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

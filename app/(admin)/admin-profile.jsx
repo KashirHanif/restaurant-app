@@ -26,7 +26,9 @@ useEffect(() => {
   const fetchStoredData = async () => {
     try {
       const userData = await AsyncStorage.getItem('userData');
+      console.log(userData);
       const restaurantData = await AsyncStorage.getItem('restaurantData');
+      console.log(restaurantData);
 
       if (userData) {
         const parsedUser = JSON.parse(userData);
@@ -71,21 +73,24 @@ useEffect(() => {
       return;
     }
 
-    const payload = {
-      data: {
-        name: restaurantName,
-        location,
-        number_of_tables: Number(tables),
-        owner: userId,
-      },
-    };
+   const payload = {
+    data: {
+      name: restaurantName,
+      location,
+      number_of_tables: Number(tables),
+      owner: userId, // Correctly structured as an object with the related user's ID
 
+    },
+  };
+
+
+    console.log(payload)
     const url = restaurantId
-      ? `http://192.168.100.98:1337/api/restaurants/${restaurantId}` // PUT for existing
-      : 'http://192.168.100.98:1337/api/restaurants'; // POST for new
+      ? `http://10.135.50.188:1337/api/restaurants/${restaurantId}` // PUT for existing
+      : 'http://10.135.50.188:1337/api/restaurants'; // POST for new
 
     const method = restaurantId ? 'PUT' : 'POST';
-
+    console.log("Request sent type : ",method)
     const response = await fetch(url, {
       method,
       headers: {
@@ -96,9 +101,11 @@ useEffect(() => {
     });
 
     const result = await response.json();
+    console.log("Result is " ,result);
 
     if (response.ok) {
       await AsyncStorage.setItem('restaurantData', JSON.stringify(result.data));
+ 
       Alert.alert('Success', restaurantId ? 'Profile updated!' : 'Profile saved successfully!');
       setRestaurantId(result.data.documentId); // update after creation
     } else {

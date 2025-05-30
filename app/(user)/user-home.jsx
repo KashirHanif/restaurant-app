@@ -1,12 +1,16 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useRouter } from 'expo-router'; // Import router
-import { useEffect, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function UserHome() {
-  const router = useRouter(); // For navigation
+  const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const alertShown = useRef(false); // 🛡️ Alert guard
+
+
+
 
   useEffect(() => {
     if (!permission || !permission.granted) {
@@ -14,10 +18,44 @@ export default function UserHome() {
     }
   }, [permission]);
 
-  const handleBarcodeScanned = ({ data }) => {
-    setScanned(true);
-    Alert.alert('Scanned QR Code', `Data: ${data}`);
-  };
+const handleBarcodeScanned = ({ data }) => {
+  if (alertShown.current) return;
+  alertShown.current = true;
+  setScanned(true);
+
+  try {
+    const isValid = typeof data === 'string' && data.includes('http') && data.includes('/api/');
+
+    if (isValid) {
+      router.push({
+        pathname: 'user-menu',
+        params: { url: encodeURIComponent(data) },
+      });
+    } else {
+      // 🛠️ Reset scanned so it can scan again next time
+      setScanned(false);
+      Alert.alert('Invalid QR', 'The scanned QR code is not valid.', [
+        {
+          text: 'OK',
+          onPress: () => {
+            alertShown.current = false;
+          },
+        },
+      ]);
+    }
+  } catch (error) {
+    setScanned(false); // 💥 Reset if error
+    Alert.alert('Error', 'Something went wrong. Please try again.', [
+      {
+        text: 'OK',
+        onPress: () => {
+          alertShown.current = false;
+        },
+      },
+    ]);
+  }
+};
+
 
   if (!permission || !permission.granted) {
     return (
@@ -49,7 +87,6 @@ export default function UserHome() {
         </TouchableOpacity>
       )}
 
-      {/* New button for user profile */}
       <TouchableOpacity
         style={styles.profileButton}
         onPress={() => router.push('/user-profile')}
@@ -95,7 +132,7 @@ const styles = StyleSheet.create({
   },
   profileButton: {
     position: 'absolute',
-    bottom: 40,  // Not too bottom
+    bottom: 40,
     paddingVertical: 12,
     paddingHorizontal: 24,
   },
