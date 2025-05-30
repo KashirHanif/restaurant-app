@@ -8,7 +8,7 @@ import {
     Text,
     View,
 } from 'react-native';
-import MenuCard from '../../Components/MenuCard';
+import MenuCard from '../../../Components/MenuCard';
 
 
 export default function UserMenu() {
