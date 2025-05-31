@@ -16,57 +16,20 @@ export default function UserHome() {
     }
   }, [permission]);
 
-  const handleBarcodeScanned = async ({ data }) => {
-    if (alertShown.current) return;
-    alertShown.current = true;
-    setScanned(true);
+ const handleBarcodeScanned = async ({ data }) => {
+  if (alertShown.current) return;
+  alertShown.current = true;
+  setScanned(true);
 
-    try {
-      const isValid =
-        typeof data === "string" &&
-        data.includes("http") &&
-        data.includes("/api/");
+  try {
+    const isValid =
+      typeof data === "string" &&
+      data.includes("http") &&
+      data.includes("/api/");
 
-      if (!isValid) {
-        setScanned(false);
-        Alert.alert("Invalid QR", "The scanned QR code is not valid.", [
-          {
-            text: "OK",
-            onPress: () => {
-              alertShown.current = false;
-            },
-          },
-        ]);
-        return;
-      }
-
-      // 🔐 Check login status
-      const token = await AsyncStorage.getItem("userToken");
-      const userData = await AsyncStorage.getItem("userData");
-      const role = userData ? JSON.parse(userData).role?.toLowerCase() : null;
-
-      if (!token || role !== "customer") {
-        await AsyncStorage.setItem('pendingMenuURL', data); 
-        Alert.alert("Login Required", "Please log in to view the menu.", [
-          {
-            text: "Go to Login",
-            onPress: () => {
-              router.replace("/(auth)/login");
-            },
-          },
-        ]);
-        return;
-      }
-
-      // ✅ Valid and authenticated
-      router.push({
-        pathname: "user-menu",
-        params: { url: encodeURIComponent(data) },
-      });
-    } catch (error) {
-      console.error("QR Scan Error:", error);
+    if (!isValid) {
       setScanned(false);
-      Alert.alert("Error", "Something went wrong. Please try again.", [
+      Alert.alert("Invalid QR", "The scanned QR code is not valid.", [
         {
           text: "OK",
           onPress: () => {
@@ -74,8 +37,95 @@ export default function UserHome() {
           },
         },
       ]);
+      return;
     }
-  };
+
+    const token = await AsyncStorage.getItem("userToken");
+    const userData = await AsyncStorage.getItem("userData");
+    const role = userData ? JSON.parse(userData).role?.toLowerCase() : null;
+
+    if (!token || role !== "customer") {
+      await AsyncStorage.setItem("pendingMenuURL", data);
+      Alert.alert("Login Required", "Please log in to view the menu.", [
+        {
+          text: "Go to Login",
+          onPress: () => {
+            router.replace("/(auth)/login");
+          },
+        },
+      ]);
+      return;
+    }
+
+    const url = new URL(data);
+    const restaurantDocId = url.searchParams.get("filters[restaurant][documentId][$eq]");
+    const tableNumber = url.searchParams.get("table");
+
+    if (!restaurantDocId || !tableNumber) {
+      Alert.alert("Error", "Invalid QR Code structure.");
+      return;
+    }
+
+    // Step 1: Get restaurant ID from documentId
+    const restaurantRes = await fetch(
+      `http://192.168.100.98:1337/api/restaurants?filters[documentId][$eq]=${restaurantDocId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const restaurantData = await restaurantRes.json();
+    const restaurantId = restaurantData?.data?.[0]?.id;
+
+    if (!restaurantId) {
+      Alert.alert("Error", "Restaurant not found.");
+      return;
+    }
+
+    // Step 2: Get table by resolved restaurant ID + table number
+    const tableRes = await fetch(
+      `http://192.168.100.98:1337/api/tables?filters[restaurant][id][$eq]=${restaurantId}&filters[table_number][$eq]=${tableNumber}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const tableData = await tableRes.json();
+    const tableDocId = tableData?.data?.[0]?.documentId;
+
+    if (!tableDocId) {
+      Alert.alert("Error", "Table not found.");
+      return;
+    }
+
+    // Save to AsyncStorage
+    console.log(restaurantDocId)
+    console.log(tableDocId)
+    await AsyncStorage.setItem("restaurantDocumentId", restaurantDocId);
+    await AsyncStorage.setItem("tableDocumentId", tableDocId);
+
+    // Navigate to menu
+    router.push({
+      pathname: "user-menu",
+      params: { url: encodeURIComponent(data) },
+    });
+  } catch (error) {
+    console.error("QR Scan Error:", error);
+    setScanned(false);
+    Alert.alert("Error", "Something went wrong. Please try again.", [
+      {
+        text: "OK",
+        onPress: () => {
+          alertShown.current = false;
+        },
+      },
+    ]);
+  }
+};
 
   if (!permission || !permission.granted) {
     return (

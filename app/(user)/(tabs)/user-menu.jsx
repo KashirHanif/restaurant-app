@@ -31,6 +31,7 @@ export default function UserMenu() {
         if (Array.isArray(result.data)) {
           const parsed = result.data.map((item) => ({
             id: item.id,
+            documentId:item.documentId,
             name: item.name || '',
             price: item.price || '',
             category: item.category || '',
