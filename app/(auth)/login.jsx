@@ -4,16 +4,18 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Image,
+  ImageBackground,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import ForkcastLogo from "../../assets/images/Forkcast-logo.png";
-
 
 export default function Login() {
   const router = useRouter();
@@ -28,6 +30,7 @@ export default function Login() {
     /^\w+([.-]?\w+)@\w+([.-]?\w+)(\.\w{2,3})+$/.test(email);
 
   const handleLogin = async () => {
+    Keyboard.dismiss(); // <-- Dismiss keyboard on login press
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     if (!validateEmail(email)) {
@@ -41,7 +44,7 @@ export default function Login() {
 
     try {
       const response = await fetch(
-        "http://192.168.100.98:1337/api/auth/local/custom-login",
+        "http://192.168.100.92:1337/api/auth/local/custom-login",
         {
           method: "POST",
           headers: {
@@ -98,73 +101,94 @@ export default function Login() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={styles.container}
+    <ImageBackground
+      source={require("../../assets/images/landing-page-bg.png")}
+      style={styles.background}
+      resizeMode="cover"
     >
-      <View style={styles.logoWrapper}>
-        <Image source={ForkcastLogo} style={styles.logo} resizeMode="contain" />
-      </View>
+      {/* Dismiss keyboard on tapping outside */}
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={styles.container}
+        >
+          <View style={styles.overlay}>
+            <View style={styles.logoWrapper}>
+              <Image
+                source={ForkcastLogo}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            </View>
 
-      <Text style={styles.title}>Welcome Back</Text>
+            <Text style={styles.title}>Welcome Back</Text>
 
-      <TextInput
-        placeholder="Email"
-        style={[styles.input, focusedField === "email" && styles.inputFocused]}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        value={email}
-        onChangeText={setEmail}
-        onFocus={() => setFocusedField("email")}
-        onBlur={() => setFocusedField(null)}
-        placeholderTextColor="#888"
-      />
+            <TextInput
+              placeholder="Email"
+              style={[styles.input, focusedField === "email" && styles.inputFocused]}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+              onFocus={() => setFocusedField("email")}
+              onBlur={() => setFocusedField(null)}
+              placeholderTextColor="#888"
+            />
 
-      <TextInput
-        placeholder="Password"
-        style={[
-          styles.input,
-          focusedField === "password" && styles.inputFocused,
-        ]}
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-        onFocus={() => setFocusedField("password")}
-        onBlur={() => setFocusedField(null)}
-        placeholderTextColor="#888"
-      />
+            <TextInput
+              placeholder="Password"
+              style={[
+                styles.input,
+                focusedField === "password" && styles.inputFocused,
+              ]}
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+              onFocus={() => setFocusedField("password")}
+              onBlur={() => setFocusedField(null)}
+              placeholderTextColor="#888"
+            />
 
-      {!!error && <Text style={styles.error}>{error}</Text>}
+            {!!error && <Text style={styles.error}>{error}</Text>}
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Login</Text>
-      </TouchableOpacity>
+            <TouchableOpacity style={styles.button} onPress={handleLogin}>
+              <Text style={styles.buttonText}>Login</Text>
+            </TouchableOpacity>
 
-      <View style={styles.divider} />
+            <View style={styles.divider} />
 
-      <TouchableOpacity
-        onPress={() =>
-          router.push({
-            pathname: "/signup",
-            params: role ? { role } : undefined,
-          })
-        }
-      >
-        <Text style={styles.signupText}>
-          Don’t have an account?{" "}
-          <Text style={styles.signupLink}>Sign up now</Text>
-        </Text>
-      </TouchableOpacity>
-    </KeyboardAvoidingView>
+            <TouchableOpacity
+              onPress={() =>
+                router.push({
+                  pathname: "/signup",
+                  params: role ? { role } : undefined,
+                })
+              }
+            >
+              <Text style={styles.signupText}>
+                Don’t have an account?{" "}
+                <Text style={styles.signupLink}>Sign up now</Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: "#fffaf3",
+  },
+  overlay: {
+    flex: 1,
     justifyContent: "center",
     paddingHorizontal: 28,
+    backgroundColor: "rgba(255, 250, 243, 0.25)",
   },
   logoWrapper: {
     alignItems: "center",
@@ -177,7 +201,6 @@ const styles = StyleSheet.create({
     height: 280,
     marginLeft: 15, // adjusts for logo imbalance
   },
-
   title: {
     fontSize: 30,
     fontWeight: "700",
@@ -199,7 +222,7 @@ const styles = StyleSheet.create({
     borderColor: "#6a994e",
   },
   button: {
-    backgroundColor: "#6a994e",
+    backgroundColor: "#556B2F",
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",
@@ -231,7 +254,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   signupLink: {
-    color: "#6a994e",
+    color: "#556B2F",
     fontWeight: "700",
   },
 });

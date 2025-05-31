@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Asset } from 'expo-asset';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -11,146 +10,201 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import ForkcastLogo from '../assets/images/Forkcast-logo-white.png';
 
 export default function Index() {
   const router = useRouter();
   const [isReady, setIsReady] = useState(false);
-  const slideAnim = useRef(new Animated.Value(-200)).current;
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const slideAnim = useRef(new Animated.Value(40)).current;
 
   useEffect(() => {
     const preloadAndRedirect = async () => {
-      await Asset.loadAsync(require('../assets/images/landingpage-bg.png'));
-
       try {
         const token = await AsyncStorage.getItem('userToken');
         const userData = await AsyncStorage.getItem('userData');
         const role = userData ? JSON.parse(userData).role?.toLowerCase() : null;
 
-
         if (token && role === 'admin') {
           router.replace('/(admin)/admin-home');
-          return;
         } else if (token && role === 'customer') {
           router.replace('/(user)/user-home');
-          return;
+        } else {
+          setIsReady(true);
         }
-      } catch (err) {
-        console.error('Token check failed:', err);
+      } catch {
+        setIsReady(true);
       }
-
-      setIsReady(true); // Only show landing if not auto-redirected
     };
 
     preloadAndRedirect();
 
     Animated.timing(slideAnim, {
       toValue: 0,
-      duration: 1000,
+      duration: 600,
       useNativeDriver: true,
     }).start();
   }, []);
 
   if (!isReady) {
+    // Show loading before UI and image load
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#ff6f00" />
+        <ActivityIndicator size="large" color="#556B2F" />
       </View>
     );
   }
 
-  // LANDING SCREEN BELOW
   return (
-    <ImageBackground
-      source={require('../assets/images/landingpage-bg.png')}
-      style={styles.background}
-      resizeMode="cover"
-      blurRadius={3}
-    >
-      <View style={styles.overlay}>
-        <Animated.Image
-          source={ForkcastLogo}
-          style={[styles.logo, { transform: [{ translateY: slideAnim }] }]}
-          resizeMode="contain"
-        />
+    <View style={{ flex: 1 }}>
+      <ImageBackground
+        source={require('../assets/images/landing-page-bg.png')}
+        style={styles.background}
+        resizeMode="cover"
+        onLoad={() => setImageLoaded(true)}
+      >
+        {!imageLoaded && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color="#556B2F" />
+          </View>
+        )}
 
-        <Text style={styles.title}>Scan. Order. Enjoy.</Text>
-        <Text style={styles.subtitle}>
-          Discover the easiest way to dine! Just scan the QR code on your table,
-          view the live menu, and place your order right from your phone.
-        </Text>
+        <View style={styles.overlay}>
+          <Animated.View
+            style={[styles.card, { transform: [{ translateY: slideAnim }] }]}
+          >
+            <Text style={styles.logo}>Forkcast.</Text>
+            <Text style={styles.title}>Scan. Order. Enjoy.</Text>
+            <View style={styles.underline} />
+            <Text style={styles.subtitle}>
+              Scan the QR code on your table to view the menu and place orders
+              effortlessly.
+            </Text>
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => router.push('/(user)/user-home')}
-        >
-          <Text style={styles.buttonText}>Continue as User</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              activeOpacity={0.85}
+              onPress={() => router.push('/(user)/user-home')}
+            >
+              <Text style={styles.buttonText}>Continue as User</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.button, styles.adminButton]}
-          onPress={() => router.push({pathname:'/login', params: { role : 'Admin' }})}
-        >
-          <Text style={styles.buttonText}>Continue as Admin</Text>
-        </TouchableOpacity>
-      </View>
-    </ImageBackground>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              activeOpacity={0.85}
+              onPress={() => router.push('/login')}
+            >
+              <Text style={styles.buttonTextSecondary}>Continue as Admin</Text>
+            </TouchableOpacity>
+          </Animated.View>
+          <Text style={styles.footer}>© 2025 Forkcast. All rights reserved.</Text>
+        </View>
+      </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
+    backgroundColor: '#F0F4F8',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000',
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    zIndex: 10,
   },
   background: {
     flex: 1,
     justifyContent: 'center',
   },
   overlay: {
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    padding: 30,
-    margin: 20,
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  card: {
+    backgroundColor: 'rgba(255, 255, 255, 0.6)', // semi-transparent white for subtle background
+    width: '100%',
+    maxWidth: 400,
     borderRadius: 20,
+    padding: 32,
+    shadowColor: '#556B2F',
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 10,
     alignItems: 'center',
   },
   logo: {
-    width: 440,
-    height: 280,
-    alignSelf: 'center',
-    marginLeft: 20,
+    fontSize: 36,
+    fontWeight: '900',
+    color: '#556B2F',
+    marginBottom: 12,
   },
   title: {
-    fontSize: 32,
-    color: '#fff',
-    fontWeight: 'bold',
-    marginBottom: 10,
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#0D1F3C',
+    marginBottom: 8,
     textAlign: 'center',
+    letterSpacing: 1.1,
+  },
+  underline: {
+    width: 70,
+    height: 4,
+    backgroundColor: '#556B2F',
+    borderRadius: 2,
+    marginBottom: 18,
+    alignSelf: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: '#ddd',
+    color: '#606F85',
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 28,
     lineHeight: 22,
   },
-  button: {
-    backgroundColor: '#ff6f00',
+  primaryButton: {
+    backgroundColor: '#556B2F',
+    borderRadius: 12,
     paddingVertical: 14,
-    paddingHorizontal: 30,
-    borderRadius: 10,
-    marginVertical: 10,
-    width: '80%',
+    paddingHorizontal: 40,
+    width: '100%',
+    marginBottom: 16,
     alignItems: 'center',
-  },
-  adminButton: {
-    backgroundColor: '#00897b',
+    shadowColor: '#405222',
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
   buttonText: {
-    color: '#fff',
+    color: '#FFFFFF',
+    fontWeight: '700',
     fontSize: 18,
-    fontWeight: 'bold',
+  },
+  secondaryButton: {
+    borderColor: '#556B2F',
+    borderWidth: 2,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    width: '100%',
+    alignItems: 'center',
+  },
+  buttonTextSecondary: {
+    color: '#556B2F',
+    fontWeight: '700',
+    fontSize: 18,
+  },
+  footer: {
+    marginTop: 20,
+    color: '#9AA3B1',
+    fontSize: 12,
   },
 });

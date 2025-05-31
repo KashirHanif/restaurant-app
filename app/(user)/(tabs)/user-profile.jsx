@@ -1,6 +1,7 @@
-import { StyleSheet, Text, View, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import { Button, StyleSheet, Text, View } from 'react-native';
+import TabHeader from '../../../Components/TabHeader';
 
 export default function UserProfile() {
   const router = useRouter();
@@ -13,10 +14,14 @@ export default function UserProfile() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Button title="Logout" onPress={handleLogout} color="#6a994e" />
+      <TabHeader
+        title="Profile"
+        rightComponent={<Button title="Logout" onPress={handleLogout} color="#6a994e" />}
+      />
+
+      <View style={styles.content}>
+        <Text style={styles.text}>This is the User Profile screen</Text>
       </View>
-      <Text style={styles.text}>This is the User Profile screen</Text>
     </View>
   );
 }
@@ -24,15 +29,16 @@ export default function UserProfile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
+    backgroundColor: '#fffaf3',
   },
-  header: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 20, // enough spacing below header
   },
   text: {
-    fontSize: 18
-  }
+    fontSize: 18,
+    color: '#3e403f',
+  },
 });

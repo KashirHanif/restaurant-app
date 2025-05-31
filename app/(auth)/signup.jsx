@@ -1,18 +1,18 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   Image,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import ForkcastLogo from '../../assets/images/Forkcast-logo.png';
 import { useSignup } from '../../hooks/useSignup';
-import { useLocalSearchParams } from 'expo-router';
 
 export default function Signup() {
   const router = useRouter();
@@ -26,84 +26,97 @@ export default function Signup() {
   const { signup, error, setError } = useSignup();
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.container}
+    <ImageBackground
+      source={require('../../assets/images/landing-page-bg.png')}
+      style={styles.background}
+      resizeMode="cover"
     >
-      <View style={styles.logoWrapper}>
-        <Image source={ForkcastLogo} style={styles.logo} resizeMode="contain" />
+      <View style={styles.overlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.container}
+        >
+          <View style={styles.logoWrapper}>
+            <Image source={ForkcastLogo} style={styles.logo} resizeMode="contain" />
+          </View>
+
+          <Text style={styles.title}>Create Account</Text>
+
+          <TextInput
+            placeholder="Email"
+            style={[styles.input, focusedField === 'email' && styles.inputFocused]}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={(val) => {
+              setEmail(val);
+              setError('');
+            }}
+            onFocus={() => setFocusedField('email')}
+            onBlur={() => setFocusedField(null)}
+            placeholderTextColor="#888"
+          />
+
+          <TextInput
+            placeholder="Username"
+            style={[styles.input, focusedField === 'username' && styles.inputFocused]}
+            autoCapitalize="none"
+            value={username}
+            onChangeText={(val) => {
+              setUsername(val);
+              setError('');
+            }}
+            onFocus={() => setFocusedField('username')}
+            onBlur={() => setFocusedField(null)}
+            placeholderTextColor="#888"
+          />
+
+          <TextInput
+            placeholder="Password"
+            style={[styles.input, focusedField === 'password' && styles.inputFocused]}
+            secureTextEntry
+            value={password}
+            onChangeText={(val) => {
+              setPassword(val);
+              setError('');
+            }}
+            onFocus={() => setFocusedField('password')}
+            onBlur={() => setFocusedField(null)}
+            placeholderTextColor="#888"
+          />
+
+          {!!error && <Text style={styles.error}>{error}</Text>}
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => signup({ username, email, password, role: role })}
+          >
+            <Text style={styles.buttonText}>Sign Up</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => router.push('/login')}>
+            <Text style={styles.switchText}>
+              Already have an account? <Text style={styles.switchLink}>Login here</Text>
+            </Text>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
       </View>
-
-      <Text style={styles.title}>Create Account</Text>
-
-      <TextInput
-        placeholder="Email"
-        style={[styles.input, focusedField === 'email' && styles.inputFocused]}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        value={email}
-        onChangeText={(val) => {
-          setEmail(val);
-          setError('');
-        }}
-        onFocus={() => setFocusedField('email')}
-        onBlur={() => setFocusedField(null)}
-        placeholderTextColor="#888"
-      />
-
-      <TextInput
-        placeholder="Username"
-        style={[styles.input, focusedField === 'username' && styles.inputFocused]}
-        autoCapitalize="none"
-        value={username}
-        onChangeText={(val) => {
-          setUsername(val);
-          setError('');
-        }}
-        onFocus={() => setFocusedField('username')}
-        onBlur={() => setFocusedField(null)}
-        placeholderTextColor="#888"
-      />
-
-      <TextInput
-        placeholder="Password"
-        style={[styles.input, focusedField === 'password' && styles.inputFocused]}
-        secureTextEntry
-        value={password}
-        onChangeText={(val) => {
-          setPassword(val);
-          setError('');
-        }}
-        onFocus={() => setFocusedField('password')}
-        onBlur={() => setFocusedField(null)}
-        placeholderTextColor="#888"
-      />
-
-      {!!error && <Text style={styles.error}>{error}</Text>}
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => signup({ username, email, password, role: role })}
-      >
-        <Text style={styles.buttonText}>Sign Up</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => router.push('/login')}>
-        <Text style={styles.switchText}>
-          Already have an account? <Text style={styles.switchLink}>Login here</Text>
-        </Text>
-      </TouchableOpacity>
-    </KeyboardAvoidingView>
+    </ImageBackground>
   );
 }
 
-
 const styles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
-    backgroundColor: '#fffaf3',
+  },
+  overlay: {
+    flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 28,
+    backgroundColor: 'rgba(255, 250, 243, 0.25)', // translucent overlay
+  },
+  container: {
+    flex: 1,
   },
   logoWrapper: {
     alignItems: 'center',
@@ -136,7 +149,7 @@ const styles = StyleSheet.create({
     borderColor: '#6a994e',
   },
   button: {
-    backgroundColor: '#6a994e',
+    backgroundColor: '#556B2F',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',

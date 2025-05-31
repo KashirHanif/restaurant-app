@@ -1,12 +1,12 @@
 import { StyleSheet, Text, View } from 'react-native';
 import TabHeader from '../../../Components/TabHeader';
 
-export default function UserOrder() {
+export default function UserCart() {
   return (
     <View style={styles.container}>
-      <TabHeader title="Orders" />
+      <TabHeader title="Cart" />
       <View style={styles.content}>
-        <Text style={styles.text}>This is the User Order screen</Text>
+        <Text style={styles.text}>This is user cart</Text>
       </View>
     </View>
   );

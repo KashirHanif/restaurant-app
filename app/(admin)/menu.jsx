@@ -66,7 +66,7 @@ export default function Menu() {
       }
 
       const response = await fetch(
-        `http://192.168.100.98:1337/api/menu-items?filters[restaurant][documentId][$eq]=${restaurantId}`,
+        `http://192.168.100.92:1337/api/menu-items?filters[restaurant][documentId][$eq]=${restaurantId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -155,7 +155,7 @@ export default function Menu() {
         const itemId = items[editIndex]?.documentId;
 
         response = await fetch(
-          `http://192.168.100.98:1337/api/menu-items/${itemId}`,
+          `http://192.168.100.92:1337/api/menu-items/${itemId}`,
           {
             method: "PUT",
             headers: {
@@ -175,7 +175,7 @@ export default function Menu() {
           Alert.alert("Error", result.error?.message || "Update failed");
         }
       } else {
-        response = await fetch("http://192.168.100.98:1337/api/menu-items", {
+        response = await fetch("http://192.168.100.92:1337/api/menu-items", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -257,7 +257,7 @@ export default function Menu() {
 
     try {
       const response = await fetch(
-        `http://192.168.100.98:1337/api/menu-items/${itemId}`,
+        `http://192.168.100.92:1337/api/menu-items/${itemId}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
@@ -293,7 +293,7 @@ export default function Menu() {
 
     // 🔄 1️⃣ Fetch the latest profile from Strapi to get the current number_of_tables
     const profileRes = await fetch(
-      `http://192.168.100.98:1337/api/restaurants?filters[documentId][$eq]=${restaurantDocId}`,
+      `http://192.168.100.92:1337/api/restaurants?filters[documentId][$eq]=${restaurantDocId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -311,7 +311,7 @@ export default function Menu() {
 
     // 🧾 2️⃣ Fetch existing QR tables
     const existingRes = await fetch(
-      `http://192.168.100.98:1337/api/tables?filters[restaurant][documentId][$eq]=${restaurantDocId}`,
+      `http://192.168.100.92:1337/api/tables?filters[restaurant][documentId][$eq]=${restaurantDocId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -340,7 +340,7 @@ export default function Menu() {
     // 🗑 4️⃣ Delete existing tables if count mismatches
     if (existingTables.length > 0) {
       const deletePromises = existingTables.map((table) =>
-        fetch(`http://192.168.100.98:1337/api/tables/${table.documentId}`, {
+        fetch(`http://192.168.100.92:1337/api/tables/${table.documentId}`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -356,7 +356,7 @@ export default function Menu() {
     const creationPromises = [];
 
     for (let tableNum = 1; tableNum <= numTables; tableNum++) {
-      const qrUrl = `http://192.168.100.98:1337/api/menu-items?filters[restaurant][documentId][$eq]=${restaurantDocId}&table=${tableNum}`;
+      const qrUrl = `http://192.168.100.92:1337/api/menu-items?filters[restaurant][documentId][$eq]=${restaurantDocId}&table=${tableNum}`;
 
       const tablePayload = {
         data: {
@@ -368,7 +368,7 @@ export default function Menu() {
       
       
       creationPromises.push(
-        fetch("http://192.168.100.98:1337/api/tables", {
+        fetch("http://192.168.100.92:1337/api/tables", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -383,7 +383,7 @@ export default function Menu() {
 
     // 🔄 6️⃣ Refetch final table list
     const finalRes = await fetch(
-      `http://192.168.100.98:1337/api/tables?filters[restaurant][documentId][$eq]=${restaurantDocId}`,
+      `http://192.168.100.92:1337/api/tables?filters[restaurant][documentId][$eq]=${restaurantDocId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
