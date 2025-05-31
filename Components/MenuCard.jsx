@@ -1,9 +1,10 @@
-import { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useCartStore } from '../stores/useCartStore'; // adjust path as needed
 
 export default function MenuCard({ item }) {
-  // Local state for display only (no functionality yet)
-  const [count, setCount] = useState(0);
+  const { cartItems, addToCart, updateQuantity } = useCartStore();
+  const cartItem = cartItems.find((ci) => ci.id === item.id);
+  const count = cartItem?.quantity || 0;
 
   return (
     <View style={styles.card}>
@@ -12,7 +13,9 @@ export default function MenuCard({ item }) {
 
         <View style={styles.infoRow}>
           <Text style={styles.price}>₨ {item.price}</Text>
-          {item.category && <Text style={styles.category}>{item.category}</Text>}
+          {item.category && (
+            <Text style={styles.category}>{item.category}</Text>
+          )}
         </View>
 
         {Array.isArray(item.description) && item.description.length > 0 && (
@@ -30,10 +33,20 @@ export default function MenuCard({ item }) {
       <View style={styles.counterContainer}>
         <Text style={styles.counterText}>{count}</Text>
         <View style={styles.buttonsRow}>
-          <TouchableOpacity style={styles.buttonMinus} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.buttonMinus}
+            activeOpacity={0.7}
+            onPress={() => updateQuantity(item.id, count - 1)}
+            disabled={count === 0}
+          >
             <Text style={styles.buttonText}>-</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.buttonPlus} activeOpacity={0.7}>
+
+          <TouchableOpacity
+            style={styles.buttonPlus}
+            activeOpacity={0.7}
+            onPress={() => addToCart(item)}
+          >
             <Text style={styles.buttonText}>+</Text>
           </TouchableOpacity>
         </View>

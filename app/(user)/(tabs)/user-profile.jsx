@@ -2,13 +2,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Button, StyleSheet, Text, View } from 'react-native';
 import TabHeader from '../../../Components/TabHeader';
+import { useCartStore } from '../../../stores/useCartStore';
 
 export default function UserProfile() {
   const router = useRouter();
 
+  const { clearCart } = useCartStore();
   const handleLogout = async () => {
     await AsyncStorage.removeItem('userToken');
     await AsyncStorage.removeItem('userData');
+    clearCart();
     router.replace('/');
   };
 

@@ -1,7 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
+import { useCartStore } from '../../../stores/useCartStore';
 
 export default function UserTabs() {
+  const cartItems = useCartStore((state) => state.cartItems);
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
   return (
     <Tabs
       screenOptions={({ route }) => {
@@ -21,27 +26,37 @@ export default function UserTabs() {
             iconName = 'person';
             break;
           default:
-            iconName = 'ellipse'; // fallback icon
+            iconName = 'ellipse';
         }
 
         return {
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name={iconName} size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) =>
+            route.name === 'user-cart' ? (
+              <View style={styles.iconWithBadge}>
+                <Ionicons name={iconName} size={size} color={color} />
+                {cartCount > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{cartCount}</Text>
+                  </View>
+                )}
+              </View>
+            ) : (
+              <Ionicons name={iconName} size={size} color={color} />
+            ),
           tabBarActiveTintColor: '#6a994e',
           tabBarInactiveTintColor: 'gray',
           headerShown: false,
           tabBarStyle: {
-          backgroundColor: '#fff',
-          borderTopWidth: 0,
-          elevation: 8,
-          shadowColor: '#000',
-          shadowOpacity: 0.1,
-          shadowOffset: { width: 0, height: -2 },
-          shadowRadius: 8,
-          paddingBottom: 20,  // increased padding bottom for thickness
-          paddingTop: 16,     // increased padding top
-          height: 90, 
+            backgroundColor: '#fff',
+            borderTopWidth: 0,
+            elevation: 8,
+            shadowColor: '#000',
+            shadowOpacity: 0.1,
+            shadowOffset: { width: 0, height: -2 },
+            shadowRadius: 8,
+            paddingBottom: 20,
+            paddingTop: 16,
+            height: 90,
           },
           tabBarLabelStyle: {
             fontSize: 12,
@@ -57,3 +72,30 @@ export default function UserTabs() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  iconWithBadge: {
+    width: 28,
+    height: 28,
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -6,
+    right: -10,
+    backgroundColor: '#e63946',
+    borderRadius: 10,
+    paddingHorizontal: 5,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+});
