@@ -28,6 +28,7 @@ export const useCartStore = create(
                 documentId: item.documentId, 
                 category: item.category,
                 description: item.description,
+                time_for_preparation: item.time_for_preparation || 30,
               },
             ],
           });

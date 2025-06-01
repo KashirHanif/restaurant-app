@@ -37,7 +37,7 @@ export default function UserCart() {
     try {
       // 1. Create Stripe Payment Intent
       const response = await fetch(
-        "http://192.168.100.92:1337/api/payment-intent",
+        "http://192.168.100.98:1337/api/payment-intent",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -94,7 +94,7 @@ export default function UserCart() {
         },
       };
 
-      const orderRes = await fetch("http://192.168.100.92:1337/api/orders", {
+      const orderRes = await fetch("http://192.168.100.98:1337/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -129,13 +129,14 @@ export default function UserCart() {
           data: {
             quantity: item.quantity,
             unit_price: item.price,
+            time_for_preparation: item.time_for_preparation ?? 30,
             menu_item: { connect: [{ documentId: item.documentId }] },
             order: { connect: [{ documentId: orderDocumentId }] },
           },
         };
 
         const itemRes = await fetch(
-          "http://192.168.100.92:1337/api/order-items",
+          "http://192.168.100.98:1337/api/order-items",
           {
             method: "POST",
             headers: {

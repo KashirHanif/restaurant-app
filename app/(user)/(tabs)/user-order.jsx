@@ -16,7 +16,10 @@ import TabHeader from "../../../Components/TabHeader";
 import { useOrderStore } from "../../../stores/useOrderStore";
 
 // Enable LayoutAnimation on Android
-if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
@@ -48,7 +51,7 @@ export default function UserOrder() {
       const userId = JSON.parse(userData)?.id;
 
       const response = await fetch(
-        `http://192.168.100.92:1337/api/orders?filters[user][id][$eq]=${userId}&populate[order_items][populate]=menu_item`,
+        `http://192.168.100.98:1337/api/orders?filters[user][id][$eq]=${userId}&populate[order_items][populate]=menu_item`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -118,11 +121,13 @@ export default function UserOrder() {
             {(item?.order_items || []).map((orderItem, idx) => {
               const menuItem = orderItem?.menu_item;
               const itemName = menuItem?.name || "Unnamed item";
+              const prepTime = menuItem?.time_for_preparation ?? null;
 
               return (
                 <View key={idx} style={styles.itemRow}>
                   <Text style={styles.itemText}>
                     • {itemName} — Qty: {orderItem.quantity}
+                    {prepTime !== null ? ` — Prep Time: ${prepTime} min` : ""}
                   </Text>
                 </View>
               );
@@ -137,11 +142,7 @@ export default function UserOrder() {
     <View style={styles.container}>
       <TabHeader title="Orders" />
       {loading ? (
-        <ActivityIndicator
-          size="large"
-          color="#6a994e"
-          style={styles.loader}
-        />
+        <ActivityIndicator size="large" color="#6a994e" style={styles.loader} />
       ) : (
         <FlatList
           data={orders}

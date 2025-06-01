@@ -82,8 +82,8 @@ export default function AdminProfile() {
       };
 
       const url = restaurantId
-        ? `http://192.168.100.92:1337/api/restaurants/${restaurantId}`
-        : 'http://192.168.100.92:1337/api/restaurants';
+        ? `http://192.168.100.98:1337/api/restaurants/${restaurantId}`
+        : 'http://192.168.100.98:1337/api/restaurants';
 
       const method = restaurantId ? 'PUT' : 'POST';
 

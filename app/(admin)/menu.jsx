@@ -69,7 +69,7 @@ export default function Menu() {
       }
 
       const response = await fetch(
-        `http://192.168.100.92:1337/api/menu-items?filters[restaurant][documentId][$eq]=${restaurantId}`,
+        `http://192.168.100.98:1337/api/menu-items?filters[restaurant][documentId][$eq]=${restaurantId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -85,6 +85,7 @@ export default function Menu() {
           category: item.category || "",
           description: item.description || [],
           documentId: item.documentId,
+          time_for_preparation:item.time_for_preparation,
         }));
         setItems(items);
       } else {
@@ -161,7 +162,7 @@ const itemData = {
         const itemId = items[editIndex]?.documentId;
 
         response = await fetch(
-          `http://192.168.100.92:1337/api/menu-items/${itemId}`,
+          `http://192.168.100.98:1337/api/menu-items/${itemId}`,
           {
             method: "PUT",
             headers: {
@@ -181,7 +182,7 @@ const itemData = {
           Alert.alert("Error", result.error?.message || "Update failed");
         }
       } else {
-        response = await fetch("http://192.168.100.92:1337/api/menu-items", {
+        response = await fetch("http://192.168.100.98:1337/api/menu-items", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -264,7 +265,7 @@ const handleEdit = (index) => {
 
     try {
       const response = await fetch(
-        `http://192.168.100.92:1337/api/menu-items/${itemId}`,
+        `http://192.168.100.98:1337/api/menu-items/${itemId}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
@@ -300,7 +301,7 @@ const handleEdit = (index) => {
 
     // 🔄 1️⃣ Fetch the latest profile from Strapi to get the current number_of_tables
     const profileRes = await fetch(
-      `http://192.168.100.92:1337/api/restaurants?filters[documentId][$eq]=${restaurantDocId}`,
+      `http://192.168.100.98:1337/api/restaurants?filters[documentId][$eq]=${restaurantDocId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -318,7 +319,7 @@ const handleEdit = (index) => {
 
     // 🧾 2️⃣ Fetch existing QR tables
     const existingRes = await fetch(
-      `http://192.168.100.92:1337/api/tables?filters[restaurant][documentId][$eq]=${restaurantDocId}`,
+      `http://192.168.100.98:1337/api/tables?filters[restaurant][documentId][$eq]=${restaurantDocId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -347,7 +348,7 @@ const handleEdit = (index) => {
     // 🗑 4️⃣ Delete existing tables if count mismatches
     if (existingTables.length > 0) {
       const deletePromises = existingTables.map((table) =>
-        fetch(`http://192.168.100.92:1337/api/tables/${table.documentId}`, {
+        fetch(`http://192.168.100.98:1337/api/tables/${table.documentId}`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -363,7 +364,7 @@ const handleEdit = (index) => {
     const creationPromises = [];
 
     for (let tableNum = 1; tableNum <= numTables; tableNum++) {
-      const qrUrl = `http://192.168.100.92:1337/api/menu-items?filters[restaurant][documentId][$eq]=${restaurantDocId}&table=${tableNum}`;
+      const qrUrl = `http://192.168.100.98:1337/api/menu-items?filters[restaurant][documentId][$eq]=${restaurantDocId}&table=${tableNum}`;
 
       const tablePayload = {
         data: {
@@ -375,7 +376,7 @@ const handleEdit = (index) => {
       
       
       creationPromises.push(
-        fetch("http://192.168.100.92:1337/api/tables", {
+        fetch("http://192.168.100.98:1337/api/tables", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -390,7 +391,7 @@ const handleEdit = (index) => {
 
     // 🔄 6️⃣ Refetch final table list
     const finalRes = await fetch(
-      `http://192.168.100.92:1337/api/tables?filters[restaurant][documentId][$eq]=${restaurantDocId}`,
+      `http://192.168.100.98:1337/api/tables?filters[restaurant][documentId][$eq]=${restaurantDocId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -466,33 +467,41 @@ const handleEdit = (index) => {
 
 
   const renderItem = ({ item, index }) => (
-    <View style={styles.card}>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.cardTitle}>{item.name}</Text>
-        <Text style={styles.cardText}>Price: ₨ {item.price}</Text>
-        {item.category ? (
-          <Text style={styles.cardText}>Category: {item.category}</Text>
-        ) : null}
-        {Array.isArray(item.description) && item.description.length > 0 && (
-          <Text style={styles.cardText}>
-            {item.description
-              .map((block) =>
-                block?.children?.map((child) => child.text).join("")
-              )
-              .join("\n")}
-          </Text>
-        )}
-      </View>
-      <View style={styles.cardButtons}>
-<TouchableOpacity style={styles.editButton} onPress={() => handleEdit(index)}>
-  <Feather name="edit-3" size={20} color="#fff" />
-</TouchableOpacity>
-<TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(index)}>
-  <Feather name="trash-2" size={20} color="#fff" />
-</TouchableOpacity>
-      </View>
+  <View style={styles.card}>
+    <View style={{ flex: 1 }}>
+      <Text style={styles.cardTitle}>{item.name}</Text>
+      <Text style={styles.cardText}>Price: ₨ {item.price}</Text>
+
+      <Text style={styles.cardText}>
+        Prep Time: {item.time_for_preparation || '30'} minutes
+      </Text>
+
+      {item.category ? (
+        <Text style={styles.cardText}>Category: {item.category}</Text>
+      ) : null}
+
+      {Array.isArray(item.description) && item.description.length > 0 && (
+        <Text style={styles.cardText}>
+          {item.description
+            .map((block) =>
+              block?.children?.map((child) => child.text).join("")
+            )
+            .join("\n")}
+        </Text>
+      )}
     </View>
-  );
+
+    <View style={styles.cardButtons}>
+      <TouchableOpacity style={styles.editButton} onPress={() => handleEdit(index)}>
+        <Feather name="edit-3" size={20} color="#fff" />
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(index)}>
+        <Feather name="trash-2" size={20} color="#fff" />
+      </TouchableOpacity>
+    </View>
+  </View>
+);
+
 
   const ListEmptyComponent = () => (
     <View style={styles.emptyContainer}>

@@ -1,6 +1,6 @@
 // CartItemCard.js
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useCartStore } from '../stores/useCartStore';
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useCartStore } from "../stores/useCartStore";
 
 export default function CartItemCard({ item }) {
   const { updateQuantity } = useCartStore();
@@ -17,14 +17,43 @@ export default function CartItemCard({ item }) {
           )}
         </View>
         {Array.isArray(item.description) && item.description.length > 0 && (
-          <Text style={styles.description} numberOfLines={3} ellipsizeMode="tail">
+          <Text
+            style={styles.description}
+            numberOfLines={3}
+            ellipsizeMode="tail"
+          >
             {item.description
               .map((block) =>
-                block?.children?.map((child) => child.text).join('')
+                block?.children?.map((child) => child.text).join("")
               )
-              .join('\n')}
+              .join("\n")}
           </Text>
         )}
+        <View style={styles.infoRow}>
+          <Text style={styles.price}>₨ {item.price}</Text>
+          {item.category && (
+            <Text style={styles.category}>{item.category}</Text>
+          )}
+        </View>
+
+        {Array.isArray(item.description) && item.description.length > 0 && (
+          <Text
+            style={styles.description}
+            numberOfLines={3}
+            ellipsizeMode="tail"
+          >
+            {item.description
+              .map((block) =>
+                block?.children?.map((child) => child.text).join("")
+              )
+              .join("\n")}
+          </Text>
+        )}
+
+        {/* 👇 Add this block for prep time */}
+        <Text style={styles.prepTime}>
+          Prep Time: {item.time_for_preparation || "30 minutes"}
+        </Text>
       </View>
 
       {/* Counter & Buttons */}
@@ -55,14 +84,14 @@ export default function CartItemCard({ item }) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 18,
     padding: 20,
     marginVertical: 12,
     marginHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#6a994e',
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#6a994e",
     shadowOpacity: 0.15,
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 12,
@@ -72,75 +101,81 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardTitle: {
-    fontWeight: '800',
+    fontWeight: "800",
     fontSize: 22,
-    color: '#2d2f31',
+    color: "#2d2f31",
     marginBottom: 6,
   },
   infoRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   price: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#556B2F',
+    fontWeight: "600",
+    color: "#556B2F",
     marginRight: 16,
   },
   category: {
     fontSize: 14,
-    color: '#8a8a8a',
-    fontStyle: 'italic',
+    color: "#8a8a8a",
+    fontStyle: "italic",
   },
   description: {
     fontSize: 14,
-    color: '#555',
+    color: "#555",
     lineHeight: 20,
   },
   counterContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginLeft: 20,
   },
   counterText: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#556B2F',
+    fontWeight: "700",
+    color: "#556B2F",
     marginBottom: 10,
   },
   buttonsRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   buttonMinus: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 14,
     marginRight: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#999',
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#999",
     shadowOpacity: 0.15,
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 5,
     elevation: 3,
   },
   buttonPlus: {
-    backgroundColor: '#556B2F',
+    backgroundColor: "#556B2F",
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#2a3c12',
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#2a3c12",
     shadowOpacity: 0.4,
     shadowOffset: { width: 0, height: 5 },
     shadowRadius: 8,
     elevation: 6,
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: "700",
+  },
+  prepTime: {
+    fontSize: 13,
+    color: "#6a994e",
+    marginTop: 6,
+    fontStyle: "italic",
   },
 });

@@ -39,6 +39,8 @@ export default function UserMenu() {
             price: item.price || '',
             category: item.category || '',
             description: item.description || [],
+            documentId:item.documentId,
+            time_for_preparation: item.time_for_preparation || 30,
           }));
           setItems(parsed);
         } else {
