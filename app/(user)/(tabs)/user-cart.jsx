@@ -34,7 +34,7 @@ export default function UserCart() {
     }
 
     try {
-      // 1. Create Payment Intent
+      // 1. Create Stripe Payment Intent
       const response = await fetch(
         "http://192.168.100.98:1337/api/payment-intent",
         {
@@ -53,7 +53,7 @@ export default function UserCart() {
         return;
       }
 
-      // 2. Confirm Card Payment
+      // 2. Confirm Payment
       const { error, paymentIntent } = await stripe.confirmPayment(
         clientSecret,
         {
@@ -66,54 +66,30 @@ export default function UserCart() {
         return;
       }
 
-      // 3. Extract needed values
+      // 3. Get Stored Values
       const token = await AsyncStorage.getItem("userToken");
-      const restaurantDocId = await AsyncStorage.getItem(
+      const restaurantDocumentId = await AsyncStorage.getItem(
         "restaurantDocumentId"
       );
-      const tableDocId = await AsyncStorage.getItem("tableDocumentId");
+      const tableDocumentId = await AsyncStorage.getItem("tableDocumentId");
       const userData = await AsyncStorage.getItem("userData");
       const userId = userData ? JSON.parse(userData)?.id : null;
 
-      if (!userId || !restaurantDocId || !tableDocId) {
+      if (!userId || !restaurantDocumentId || !tableDocumentId) {
         Alert.alert("Missing data", "User, Restaurant or Table data missing.");
         return;
       }
 
-      // 4. Resolve menu items (use documentId)
-      const menuItemEntries = await Promise.all(
-        cartItems.map(async (item) => {
-          const res = await fetch(
-            `http://192.168.100.98:1337/api/menu-items?filters[documentId][$eq]=${item.documentId}`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
-          const json = await res.json();
-          const menuId = json?.data?.[0]?.documentId;
-          if (!menuId) throw new Error(`Menu item not found: ${item.name}`);
-
-          return {
-            quantity: item.quantity,
-            unit_price: item.price,
-            menu_item: {
-              connect: [{ documentId: menuId }],
-            },
-          };
-        })
-      );
-
-      // 5. Send Order using userId, restaurantDocId, tableDocId, and resolved menu item IDs
+      // 4. Create Order (excluding order_items for now)
       const orderPayload = {
         data: {
           user: userId,
-          restaurant: { connect: [{ documentId: restaurantDocId }] },
-          table: { connect: [{ documentId: tableDocId }] },
+          restaurant: { connect: [{ documentId: restaurantDocumentId }] },
+          table: { connect: [{ documentId: tableDocumentId }] },
           total_price: totalAmount,
           stripe_payment_id: paymentIntent.id,
           order_status: "processing",
           payment_status: "paid",
-          order_items: menuItemEntries,
         },
       };
 
@@ -126,20 +102,62 @@ export default function UserCart() {
         body: JSON.stringify(orderPayload),
       });
 
-      const result = await orderRes.json();
+      const orderResult = await orderRes.json();
+      const orderDocumentId = orderResult?.data?.documentId;
 
-      if (orderRes.ok) {
-        Alert.alert("Order Placed", "Your order has been placed successfully!");
-        clearCart();
-        setShowCardForm(false);
-        setCardDetails(null);
-      } else {
+      if (!orderRes.ok || !orderDocumentId) {
         console.log(
-          "🧩 Full order error response:",
-          JSON.stringify(result, null, 2)
+          "❌ Order creation failed",
+          JSON.stringify(orderResult, null, 2)
         );
-        Alert.alert("Order Error", result.error?.message || "Order failed");
+        Alert.alert(
+          "Order Error",
+          orderResult.error?.message || "Order creation failed"
+        );
+        return;
       }
+
+      // 5. Create Order Items one by one
+      for (const item of cartItems) {
+        if (!item.documentId) {
+          console.warn(`⚠️ Missing menu documentId for: ${item.name}`);
+          continue;
+        }
+
+        const orderItemPayload = {
+          data: {
+            quantity: item.quantity,
+            unit_price: item.price,
+            menu_item: { connect: [{ documentId: item.documentId }] },
+            order: { connect: [{ documentId: orderDocumentId }] },
+          },
+        };
+
+        const itemRes = await fetch(
+          "http://192.168.100.98:1337/api/order-items",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(orderItemPayload),
+          }
+        );
+
+        const itemResult = await itemRes.json();
+        if (!itemRes.ok) {
+          console.log("❌ Failed to add order item:", itemResult);
+          Alert.alert("Order Item Error", `Item ${item.name} failed to add.`);
+          return;
+        }
+      }
+
+      // 6. Finalize
+      Alert.alert("Order Placed", "Your order has been placed successfully!");
+      clearCart();
+      setShowCardForm(false);
+      setCardDetails(null);
     } catch (err) {
       console.error("Checkout error:", err);
       Alert.alert("Error", "Something went wrong during checkout.");

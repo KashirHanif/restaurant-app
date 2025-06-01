@@ -38,6 +38,8 @@ export default function UserMenu() {
             description: item.description || [],
           }));
           setItems(parsed);
+          console.log("Parsed Menu Items:", parsed);
+
         } else {
           Alert.alert('No items found');
         }

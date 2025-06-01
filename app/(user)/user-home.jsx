@@ -102,9 +102,7 @@ export default function UserHome() {
       return;
     }
 
-    // Save to AsyncStorage
-    console.log(restaurantDocId)
-    console.log(tableDocId)
+    
     await AsyncStorage.setItem("restaurantDocumentId", restaurantDocId);
     await AsyncStorage.setItem("tableDocumentId", tableDocId);
 
