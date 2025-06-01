@@ -1,16 +1,24 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
+  LayoutAnimation,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
+  UIManager,
   View,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import TabHeader from "../../../Components/TabHeader";
 import { useOrderStore } from "../../../stores/useOrderStore";
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function UserOrder() {
   const [orders, setOrders] = useState([]);
@@ -40,7 +48,7 @@ export default function UserOrder() {
       const userId = JSON.parse(userData)?.id;
 
       const response = await fetch(
-        `http://192.168.100.98:1337/api/orders?filters[user][id][$eq]=${userId}&populate[order_items][populate]=menu_item`,
+        `http://192.168.100.92:1337/api/orders?filters[user][id][$eq]=${userId}&populate[order_items][populate]=menu_item`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -51,7 +59,6 @@ export default function UserOrder() {
       const result = await response.json();
 
       if (Array.isArray(result.data)) {
-        // ✅ Filter out orders with status "served"
         const filteredOrders = result.data.filter(
           (order) => order?.order_status !== "served"
         );
@@ -80,6 +87,7 @@ export default function UserOrder() {
     const isExpanded = expandedOrderId === item.id;
 
     const toggleExpand = () => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setExpandedOrderId(isExpanded ? null : item.id);
     };
 
@@ -87,28 +95,33 @@ export default function UserOrder() {
       <TouchableOpacity
         onPress={toggleExpand}
         activeOpacity={0.9}
-        style={[styles.card, { borderLeftColor: getStatusColor(status) }]}
+        style={[
+          styles.card,
+          { borderLeftColor: getStatusColor(status) },
+          isExpanded && styles.cardExpanded,
+        ]}
       >
-        <Text style={styles.title}>Order #{item.id}</Text>
-        <Text style={styles.label}>
-          Status:{" "}
-          <Text style={{ color: getStatusColor(status), fontWeight: "bold" }}>
-            {status}
+        <View style={styles.cardHeader}>
+          <Text style={styles.title}>Order #{item.id}</Text>
+          <Text style={[styles.status, { color: getStatusColor(status) }]}>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
           </Text>
-        </Text>
-        <Text style={styles.label}>Total: ₨ {total}</Text>
-        <Text style={styles.date}>{date}</Text>
+        </View>
+        <View style={styles.cardBody}>
+          <Text style={styles.label}>Total: ₨ {total}</Text>
+          <Text style={styles.date}>{date}</Text>
+        </View>
 
         {isExpanded && (
           <View style={styles.expandedSection}>
-            <Text style={[styles.label, { marginTop: 12 }]}>Items:</Text>
+            <Text style={styles.itemsTitle}>Items:</Text>
             {(item?.order_items || []).map((orderItem, idx) => {
               const menuItem = orderItem?.menu_item;
               const itemName = menuItem?.name || "Unnamed item";
 
               return (
-                <View key={idx} style={{ marginLeft: 8, marginTop: 4 }}>
-                  <Text>
+                <View key={idx} style={styles.itemRow}>
+                  <Text style={styles.itemText}>
                     • {itemName} — Qty: {orderItem.quantity}
                   </Text>
                 </View>
@@ -127,14 +140,14 @@ export default function UserOrder() {
         <ActivityIndicator
           size="large"
           color="#6a994e"
-          style={{ marginTop: 40 }}
+          style={styles.loader}
         />
       ) : (
         <FlatList
           data={orders}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderOrder}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <Text style={styles.emptyText}>No orders placed yet.</Text>
           }
@@ -147,28 +160,48 @@ export default function UserOrder() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fffaf3",
+    backgroundColor: "#fdfdfd",
+  },
+  loader: {
+    marginTop: 40,
+  },
+  listContent: {
+    padding: 16,
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "#ffffff",
     padding: 16,
-    marginBottom: 12,
-    borderRadius: 10,
-    borderLeftWidth: 6,
+    marginBottom: 16,
+    borderRadius: 12,
+    borderLeftWidth: 5,
     shadowColor: "#000",
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 6,
-    elevation: 3,
+    elevation: 2,
+  },
+  cardExpanded: {
+    backgroundColor: "#f9f9f9",
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   title: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#3e403f",
+    fontWeight: "600",
+    color: "#2d2f31",
+  },
+  status: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  cardBody: {
+    marginTop: 8,
   },
   label: {
     fontSize: 15,
-    marginTop: 6,
     color: "#3e403f",
   },
   date: {
@@ -176,16 +209,30 @@ const styles = StyleSheet.create({
     marginTop: 4,
     color: "#707070",
   },
+  expandedSection: {
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#e0e0e0",
+    paddingTop: 12,
+  },
+  itemsTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2d2f31",
+    marginBottom: 8,
+  },
+  itemRow: {
+    marginLeft: 8,
+    marginTop: 4,
+  },
+  itemText: {
+    fontSize: 14,
+    color: "#3e403f",
+  },
   emptyText: {
     textAlign: "center",
     marginTop: 60,
     fontSize: 16,
     color: "#707070",
-  },
-  expandedSection: {
-    marginTop: 10,
-    backgroundColor: "#f9f9f9",
-    padding: 10,
-    borderRadius: 6,
   },
 });

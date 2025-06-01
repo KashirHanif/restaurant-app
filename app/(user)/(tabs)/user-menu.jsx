@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -7,6 +7,7 @@ import {
   FlatList,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View
 } from 'react-native';
 import MenuCard from '../../../Components/MenuCard';
@@ -15,10 +16,13 @@ import TabHeader from '../../../Components/TabHeader';
 const windowWidth = Dimensions.get('window').width;
 
 export default function UserMenu() {
+  const router = useRouter();
   const { url } = useLocalSearchParams();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Example cart state, replace with your real cart logic/context
+  const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
     if (!url) return;
@@ -31,15 +35,12 @@ export default function UserMenu() {
         if (Array.isArray(result.data)) {
           const parsed = result.data.map((item) => ({
             id: item.id,
-            documentId:item.documentId,
             name: item.name || '',
             price: item.price || '',
             category: item.category || '',
             description: item.description || [],
           }));
           setItems(parsed);
-          console.log("Parsed Menu Items:", parsed);
-
         } else {
           Alert.alert('No items found');
         }
@@ -53,6 +54,9 @@ export default function UserMenu() {
 
     fetchMenuItems();
   }, [url]);
+
+  // Dummy example: Simulate adding to cart (replace with your logic)
+  // You can pass setCartCount to MenuCard or handle via global state
 
   return (
     <View style={styles.container}>
@@ -74,6 +78,15 @@ export default function UserMenu() {
         />
       )}
 
+      {cartCount > 0 && (
+        <TouchableOpacity
+          style={styles.floatingCartButton}
+          onPress={() => router.push('/(user)/user-cart')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.floatingCartText}>Go to Cart ({cartCount})</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -85,7 +98,7 @@ const styles = StyleSheet.create({
   },
   floatingCartButton: {
     position: 'absolute',
-    bottom: 80,
+    bottom: 80, // adjust depending on your tab bar height + safe area
     alignSelf: 'center',
     width: windowWidth * 0.9,
     backgroundColor: '#6a994e',

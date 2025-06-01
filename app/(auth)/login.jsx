@@ -44,7 +44,7 @@ export default function Login() {
 
     try {
       const response = await fetch(
-        "http://192.168.100.98:1337/api/auth/local/custom-login",
+        "http://192.168.100.92:1337/api/auth/local/custom-login",
         {
           method: "POST",
           headers: {

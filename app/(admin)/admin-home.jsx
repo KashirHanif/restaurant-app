@@ -1,8 +1,7 @@
-// app/(admin)/admin-home.jsx
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Button, Image, StyleSheet, Text, View } from 'react-native';
+import TabHeader from '../../Components/TabHeader';
 
 export default function AdminHome() {
   const router = useRouter();
@@ -16,11 +15,21 @@ export default function AdminHome() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Button title="Logout" onPress={handleLogout} color="#6a994e" />
+      {/* ✅ TabHeader with rightComponent */}
+      <TabHeader
+        title="Admin Home"
+        rightComponent={
+          <Button title="Logout" onPress={handleLogout} color="#6a994e" />
+        }
+      />
+
+      <View style={styles.content}>
+        <Image
+          source={require('../../assets/images/Forkcast-logo.png')}
+          style={styles.logo}
+        />
+        <Text style={styles.text}>Home page: analytics not currently available.</Text>
       </View>
-      <Image source={require('../../assets/images/Forkcast-logo.png')} style={styles.logo} />
-      <Text style={styles.text}>Home page: analytics not currently available.</Text>
     </View>
   );
 }
@@ -28,14 +37,14 @@ export default function AdminHome() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    paddingTop: 60,
-    backgroundColor: '#fff',
+    backgroundColor: ' #fffaf3',
   },
-  header: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
+  content: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   logo: {
     width: 200,
@@ -46,5 +55,6 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 16,
     color: '#333',
+    textAlign: 'center',
   },
 });

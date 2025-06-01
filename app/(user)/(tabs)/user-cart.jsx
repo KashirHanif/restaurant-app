@@ -1,19 +1,20 @@
-import React, { useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { CardField, useStripe } from "@stripe/stripe-react-native";
+import { useState } from "react";
 import {
-  Alert,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    FlatList,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
+import CartItemCard from "../../../Components/CartItemCard";
 import TabHeader from "../../../Components/TabHeader";
 import { useCartStore } from "../../../stores/useCartStore";
-import { useStripe, CardField } from "@stripe/stripe-react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function UserCart() {
   const cartItems = useCartStore((state) => state.cartItems);
@@ -36,7 +37,7 @@ export default function UserCart() {
     try {
       // 1. Create Stripe Payment Intent
       const response = await fetch(
-        "http://192.168.100.98:1337/api/payment-intent",
+        "http://192.168.100.92:1337/api/payment-intent",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -93,7 +94,7 @@ export default function UserCart() {
         },
       };
 
-      const orderRes = await fetch("http://192.168.100.98:1337/api/orders", {
+      const orderRes = await fetch("http://192.168.100.92:1337/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -134,7 +135,7 @@ export default function UserCart() {
         };
 
         const itemRes = await fetch(
-          "http://192.168.100.98:1337/api/order-items",
+          "http://192.168.100.92:1337/api/order-items",
           {
             method: "POST",
             headers: {
@@ -164,15 +165,7 @@ export default function UserCart() {
     }
   };
 
-  const renderItem = ({ item }) => (
-    <View style={styles.itemCard}>
-      <View>
-        <Text style={styles.itemName}>{item.name}</Text>
-        <Text style={styles.itemQuantity}>Qty: {item.quantity}</Text>
-      </View>
-      <Text style={styles.itemPrice}>₨ {item.price * item.quantity}</Text>
-    </View>
-  );
+const renderItem = ({ item }) => <CartItemCard item={item} />;
 
   return (
     <KeyboardAvoidingView
@@ -238,7 +231,7 @@ export default function UserCart() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fffaf3",
+    backgroundColor: "#fff",
   },
   scroll: {
     paddingBottom: 60,

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { TouchableOpacity } from 'react-native';
 
 export const useCartStore = create(
   persist(

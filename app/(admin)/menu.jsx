@@ -1,8 +1,9 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import * as MediaLibrary from "expo-media-library";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { useEffect, useState } from "react";
+
 import {
   ActivityIndicator,
   Alert,
@@ -26,6 +27,8 @@ export default function Menu() {
   const [isAdding, setIsAdding] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [prepTime, setPrepTime] = useState("");
+
 
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -66,7 +69,7 @@ export default function Menu() {
       }
 
       const response = await fetch(
-        `http://192.168.100.98:1337/api/menu-items?filters[restaurant][documentId][$eq]=${restaurantId}`,
+        `http://192.168.100.92:1337/api/menu-items?filters[restaurant][documentId][$eq]=${restaurantId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -98,14 +101,16 @@ export default function Menu() {
     }
   };
 
-  const resetForm = () => {
-    setName("");
-    setPrice("");
-    setCategory("");
-    setDescription("");
-    setIsAdding(false);
-    setEditIndex(null);
-  };
+const resetForm = () => {
+  setName("");
+  setPrice("");
+  setCategory("");
+  setDescription("");
+  setPrepTime(""); // Resetting the new field
+  setIsAdding(false);
+  setEditIndex(null);
+};
+
 
   const handleAddOrUpdate = async () => {
     if (!name.trim() || !price.trim()) {
@@ -133,20 +138,21 @@ export default function Menu() {
     const restaurantId = parsedRestaurant?.documentId;
     setLoading(true);
 
-    const itemData = {
-      name,
-      price: Number(price),
-      category,
-      description: description
-        ? [
-            {
-              type: "paragraph",
-              children: [{ type: "text", text: description }],
-            },
-          ]
-        : [],
-      restaurant: restaurantId,
-    };
+const itemData = {
+  name,
+  price: Number(price),
+  category,
+  description: description
+    ? [
+        {
+          type: "paragraph",
+          children: [{ type: "text", text: description }],
+        },
+      ]
+    : [],
+  restaurant: restaurantId,
+  time_for_preparation: prepTime, // New field added here
+};
 
     try {
       let response, result;
@@ -155,7 +161,7 @@ export default function Menu() {
         const itemId = items[editIndex]?.documentId;
 
         response = await fetch(
-          `http://192.168.100.98:1337/api/menu-items/${itemId}`,
+          `http://192.168.100.92:1337/api/menu-items/${itemId}`,
           {
             method: "PUT",
             headers: {
@@ -175,7 +181,7 @@ export default function Menu() {
           Alert.alert("Error", result.error?.message || "Update failed");
         }
       } else {
-        response = await fetch("http://192.168.100.98:1337/api/menu-items", {
+        response = await fetch("http://192.168.100.92:1337/api/menu-items", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -202,27 +208,28 @@ export default function Menu() {
     resetForm();
   };
 
-  const handleEdit = (index) => {
-    const item = items[index];
-    setName(item.name);
-    setPrice(String(item.price));
-    setCategory(item.category || "");
-    const richText = item.description;
-    let plainDescription = "";
-    if (Array.isArray(richText)) {
-      plainDescription = richText
-        .map((block) =>
-          Array.isArray(block.children)
-            ? block.children.map((child) => child.text).join("")
-            : ""
-        )
-        .join("\n");
-    }
+const handleEdit = (index) => {
+  const item = items[index];
+  setName(item.name);
+  setPrice(String(item.price));
+  setCategory(item.category || "");
+  const richText = item.description;
+  let plainDescription = "";
+  if (Array.isArray(richText)) {
+    plainDescription = richText
+      .map((block) =>
+        Array.isArray(block.children)
+          ? block.children.map((child) => child.text).join("")
+          : ""
+      )
+      .join("\n");
+  }
+  setDescription(plainDescription);
+  setPrepTime(item.time_for_preparation || ""); // Populate the new field
+  setEditIndex(index);
+  setIsAdding(true);
+};
 
-    setDescription(plainDescription);
-    setEditIndex(index); // We'll use index later to get correct ID
-    setIsAdding(true);
-  };
 
   const handleDelete = (index) => {
     Alert.alert(
@@ -257,7 +264,7 @@ export default function Menu() {
 
     try {
       const response = await fetch(
-        `http://192.168.100.98:1337/api/menu-items/${itemId}`,
+        `http://192.168.100.92:1337/api/menu-items/${itemId}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
@@ -293,7 +300,7 @@ export default function Menu() {
 
     // 🔄 1️⃣ Fetch the latest profile from Strapi to get the current number_of_tables
     const profileRes = await fetch(
-      `http://192.168.100.98:1337/api/restaurants?filters[documentId][$eq]=${restaurantDocId}`,
+      `http://192.168.100.92:1337/api/restaurants?filters[documentId][$eq]=${restaurantDocId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -311,7 +318,7 @@ export default function Menu() {
 
     // 🧾 2️⃣ Fetch existing QR tables
     const existingRes = await fetch(
-      `http://192.168.100.98:1337/api/tables?filters[restaurant][documentId][$eq]=${restaurantDocId}`,
+      `http://192.168.100.92:1337/api/tables?filters[restaurant][documentId][$eq]=${restaurantDocId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -340,7 +347,7 @@ export default function Menu() {
     // 🗑 4️⃣ Delete existing tables if count mismatches
     if (existingTables.length > 0) {
       const deletePromises = existingTables.map((table) =>
-        fetch(`http://192.168.100.98:1337/api/tables/${table.documentId}`, {
+        fetch(`http://192.168.100.92:1337/api/tables/${table.documentId}`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -356,7 +363,7 @@ export default function Menu() {
     const creationPromises = [];
 
     for (let tableNum = 1; tableNum <= numTables; tableNum++) {
-      const qrUrl = `http://192.168.100.98:1337/api/menu-items?filters[restaurant][documentId][$eq]=${restaurantDocId}&table=${tableNum}`;
+      const qrUrl = `http://192.168.100.92:1337/api/menu-items?filters[restaurant][documentId][$eq]=${restaurantDocId}&table=${tableNum}`;
 
       const tablePayload = {
         data: {
@@ -368,7 +375,7 @@ export default function Menu() {
       
       
       creationPromises.push(
-        fetch("http://192.168.100.98:1337/api/tables", {
+        fetch("http://192.168.100.92:1337/api/tables", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -383,7 +390,7 @@ export default function Menu() {
 
     // 🔄 6️⃣ Refetch final table list
     const finalRes = await fetch(
-      `http://192.168.100.98:1337/api/tables?filters[restaurant][documentId][$eq]=${restaurantDocId}`,
+      `http://192.168.100.92:1337/api/tables?filters[restaurant][documentId][$eq]=${restaurantDocId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -462,7 +469,7 @@ export default function Menu() {
     <View style={styles.card}>
       <View style={{ flex: 1 }}>
         <Text style={styles.cardTitle}>{item.name}</Text>
-        <Text style={styles.cardText}>Price: ₹{item.price}</Text>
+        <Text style={styles.cardText}>Price: ₨ {item.price}</Text>
         {item.category ? (
           <Text style={styles.cardText}>Category: {item.category}</Text>
         ) : null}
@@ -477,18 +484,12 @@ export default function Menu() {
         )}
       </View>
       <View style={styles.cardButtons}>
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => handleEdit(index)}
-        >
-          <Text style={styles.buttonText}>Edit</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => handleDelete(index)}
-        >
-          <Text style={styles.buttonText}>Delete</Text>
-        </TouchableOpacity>
+<TouchableOpacity style={styles.editButton} onPress={() => handleEdit(index)}>
+  <Feather name="edit-3" size={20} color="#fff" />
+</TouchableOpacity>
+<TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(index)}>
+  <Feather name="trash-2" size={20} color="#fff" />
+</TouchableOpacity>
       </View>
     </View>
   );
@@ -499,136 +500,134 @@ export default function Menu() {
     </View>
   );
 
-  return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={{ flex: 1, backgroundColor: "#fffaf3" }}
-    >
-      {loading && (
-        <View
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            marginLeft: -20,
-            marginTop: -20,
-            zIndex: 10,
-          }}
+return (
+  <KeyboardAvoidingView
+    behavior={Platform.OS === "ios" ? "padding" : undefined}
+    style={styles.container}
+  >
+    {loading && (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color="#6a994e" />
+      </View>
+    )}
+
+    {!isAdding ? (
+      <>
+        <FlatList
+          data={items}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderItem}
+          ListEmptyComponent={ListEmptyComponent}
+          contentContainerStyle={
+            items.length === 0
+              ? styles.flatListEmpty
+              : { padding: 24, paddingBottom: 96 }
+          }
+          showsVerticalScrollIndicator={false}
+        />
+
+        <TouchableOpacity
+          style={styles.qrFab}
+          onPress={generateQrCodes}
+          activeOpacity={0.7}
         >
-          <ActivityIndicator size="large" color="#6a994e" />
-        </View>
-      )}
+          <Ionicons name="qr-code" size={24} color="#fff" />
+        </TouchableOpacity>
 
-      {!isAdding ? (
-        <>
-          <FlatList
-            data={items}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={renderItem}
-            ListEmptyComponent={ListEmptyComponent}
-            contentContainerStyle={
-              items.length === 0
-                ? styles.flatListEmpty
-                : { padding: 24, paddingBottom: 96 }
-            }
-            showsVerticalScrollIndicator={false}
-          />
-          {restaurantInfo && (
-            <TouchableOpacity
-              style={[
-                styles.qrButton,
-                { marginHorizontal: 24, marginBottom: 10 },
-              ]}
-              onPress={generateQrCodes}
-            >
-              <Text style={styles.qrButtonText}>Generate QR Codes</Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            style={styles.fab}
-            onPress={async () => {
-              const restaurantData = await AsyncStorage.getItem(
-                "restaurantData"
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={async () => {
+            const restaurantData = await AsyncStorage.getItem("restaurantData");
+            if (!restaurantData) {
+              Alert.alert(
+                "Complete Profile",
+                "Please set your profile before adding menu items.",
+                [
+                  {
+                    text: "Go to Profile",
+                    onPress: () => router.replace("/(admin)/admin-profile"),
+                  },
+                  { text: "Cancel", style: "cancel" },
+                ]
               );
-              if (!restaurantData) {
-                Alert.alert(
-                  "Complete Profile",
-                  "Please set your profile before adding menu items.",
-                  [
-                    {
-                      text: "Go to Profile",
-                      onPress: () => router.replace("/(admin)/admin-profile"),
-                    },
-                    { text: "Cancel", style: "cancel" },
-                  ]
-                );
-                return;
-              }
+              return;
+            }
 
-              setIsAdding(true);
-            }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="add" size={28} color="#fff" />
-          </TouchableOpacity>
-        </>
-      ) : (
-        <View style={styles.form}>
-          <Text style={styles.heading}>
-            {editIndex !== null ? "Edit Menu Item" : "Add Menu Item"}
+            setIsAdding(true);
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="add" size={28} color="#fff" />
+        </TouchableOpacity>
+      </>
+    ) : (
+      <View style={styles.form}>
+        <Text style={styles.heading}>
+          {editIndex !== null ? "Edit Menu Item" : "Add Menu Item"}
+        </Text>
+
+        <TextInput
+          placeholder="Name"
+          style={styles.input}
+          value={name}
+          onChangeText={setName}
+          placeholderTextColor="#888"
+        />
+        <TextInput
+          placeholder="Price"
+          style={styles.input}
+          value={price}
+          onChangeText={setPrice}
+          keyboardType="numeric"
+          placeholderTextColor="#888"
+        />
+        <TextInput
+          placeholder="Category"
+          style={styles.input}
+          value={category}
+          onChangeText={setCategory}
+          placeholderTextColor="#888"
+        />
+        <TextInput
+          placeholder="Description"
+          style={[styles.input, styles.textArea]}
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          numberOfLines={4}
+          placeholderTextColor="#888"
+        />
+        <TextInput
+        placeholder="Time of Preparation (e.g., 30 minutes)"
+        style={styles.input}
+        value={prepTime}
+        onChangeText={setPrepTime}
+        placeholderTextColor="#888"
+        />
+        <TouchableOpacity
+          style={styles.saveButton}
+          onPress={handleAddOrUpdate}
+          disabled={loading}
+        >
+          <Text style={styles.saveButtonText}>
+            {editIndex !== null ? "Update" : "Add"}
           </Text>
-
-          <TextInput
-            placeholder="Name"
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-            placeholderTextColor="#888"
-          />
-          <TextInput
-            placeholder="Price"
-            style={styles.input}
-            value={price}
-            onChangeText={setPrice}
-            keyboardType="numeric"
-            placeholderTextColor="#888"
-          />
-          <TextInput
-            placeholder="Category"
-            style={styles.input}
-            value={category}
-            onChangeText={setCategory}
-            placeholderTextColor="#888"
-          />
-          <TextInput
-            placeholder="Description"
-            style={[styles.input, styles.textArea]}
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={4}
-            placeholderTextColor="#888"
-          />
-          <TouchableOpacity
-            style={styles.saveButton}
-            onPress={handleAddOrUpdate}
-            disabled={loading}
-          >
-            <Text style={styles.saveButtonText}>
-              {editIndex !== null ? "Update" : "Add"}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={resetForm} disabled={loading}>
-            <Text style={styles.cancelText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </KeyboardAvoidingView>
-  );
+        </TouchableOpacity>
+        <TouchableOpacity onPress={resetForm} disabled={loading}>
+          <Text style={styles.cancelText}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
+    )}
+  </KeyboardAvoidingView>
+);
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#fffaf3",
+    marginTop:20
+  },
   flatListEmpty: {
     flexGrow: 1,
     justifyContent: "center",
@@ -643,16 +642,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: "center",
   },
-  buttonText: {
-    color: "#fffaf3",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
   form: {
     flex: 1,
+    backgroundColor: '#fffaf3',
     padding: 24,
-    backgroundColor: "#fffaf3",
-    justifyContent: "center",
+    justifyContent: 'center',
   },
   heading: {
     fontSize: 22,
@@ -691,24 +685,27 @@ const styles = StyleSheet.create({
     color: "#6c5c45",
     fontSize: 14,
   },
+
+  // 🍽️ Stylish Menu Card
   card: {
-    backgroundColor: "#f4eadd",
+    backgroundColor: "#ffffff",
     padding: 20,
-    borderRadius: 15,
-    marginVertical: 8,
+    borderRadius: 18,
+    marginVertical: 12,
+    marginHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
-    shadowColor: "#6a994e",
-    shadowOpacity: 0.25,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 8,
-    elevation: 4,
-    marginTop: 50,
+    shadowRadius: 12,
+    elevation: 3,
   },
   cardTitle: {
-    fontWeight: "700",
-    fontSize: 18,
-    color: "#3e403f",
+    fontWeight: "800",
+    fontSize: 20,
+    color: "#2d2f31",
+    marginBottom: 6,
   },
   cardText: {
     fontSize: 14,
@@ -717,8 +714,9 @@ const styles = StyleSheet.create({
   },
   cardButtons: {
     flexDirection: "row",
-    gap: 8,
+    alignItems: "center",
     marginLeft: 12,
+    gap: 10,
   },
   editButton: {
     backgroundColor: "#6a994e",
@@ -732,6 +730,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 10,
   },
+
+  // ➕ Floating Action Buttons
   fab: {
     position: "absolute",
     bottom: 24,
@@ -743,22 +743,31 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 6,
   },
-  qrButton: {
+  qrFab: {
+    position: "absolute",
+    bottom: 96,
+    right: 24,
     backgroundColor: "#3e403f",
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginHorizontal: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 6,
   },
-  qrButtonText: {
-    color: "#fff",
+  buttonText: {
+    color: "#fffaf3",
     fontSize: 16,
     fontWeight: "bold",
   },
 });
+

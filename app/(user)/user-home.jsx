@@ -68,7 +68,7 @@ export default function UserHome() {
 
     // Step 1: Get restaurant ID from documentId
     const restaurantRes = await fetch(
-      `http://192.168.100.98:1337/api/restaurants?filters[documentId][$eq]=${restaurantDocId}`,
+      `http://192.168.100.92:1337/api/restaurants?filters[documentId][$eq]=${restaurantDocId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -86,7 +86,7 @@ export default function UserHome() {
 
     // Step 2: Get table by resolved restaurant ID + table number
     const tableRes = await fetch(
-      `http://192.168.100.98:1337/api/tables?filters[restaurant][id][$eq]=${restaurantId}&filters[table_number][$eq]=${tableNumber}`,
+      `http://192.168.100.92:1337/api/tables?filters[restaurant][id][$eq]=${restaurantId}&filters[table_number][$eq]=${tableNumber}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
