@@ -10,11 +10,14 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import TabHeader from "../../../Components/TabHeader";
+import { useOrderStore } from "../../../stores/useOrderStore";
 
 export default function UserOrder() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
+
+  const setOrdersStore = useOrderStore((state) => state.setOrders);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -48,8 +51,13 @@ export default function UserOrder() {
       const result = await response.json();
 
       if (Array.isArray(result.data)) {
-        setOrders(result.data);
-        console.log(result.data);
+        // ✅ Filter out orders with status "served"
+        const filteredOrders = result.data.filter(
+          (order) => order?.order_status !== "served"
+        );
+
+        setOrders(filteredOrders);
+        setOrdersStore(filteredOrders);
       } else {
         Alert.alert("No orders found");
       }

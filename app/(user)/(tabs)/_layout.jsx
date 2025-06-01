@@ -2,10 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { useCartStore } from '../../../stores/useCartStore';
+import { useOrderStore } from '../../../stores/useOrderStore';
 
 export default function UserTabs() {
   const cartItems = useCartStore((state) => state.cartItems);
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const orderCount = useOrderStore((state) => state.orders.length);
 
   return (
     <Tabs
@@ -30,19 +32,26 @@ export default function UserTabs() {
         }
 
         return {
-          tabBarIcon: ({ color, size }) =>
-            route.name === 'user-cart' ? (
+          tabBarIcon: ({ color, size }) => {
+            let badgeCount = 0;
+
+            if (route.name === 'user-cart') {
+              badgeCount = cartCount;
+            } else if (route.name === 'user-order') {
+              badgeCount = orderCount;
+            }
+
+            return (
               <View style={styles.iconWithBadge}>
                 <Ionicons name={iconName} size={size} color={color} />
-                {cartCount > 0 && (
+                {badgeCount > 0 && (
                   <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{cartCount}</Text>
+                    <Text style={styles.badgeText}>{badgeCount}</Text>
                   </View>
                 )}
               </View>
-            ) : (
-              <Ionicons name={iconName} size={size} color={color} />
-            ),
+            );
+          },
           tabBarActiveTintColor: '#6a994e',
           tabBarInactiveTintColor: 'gray',
           headerShown: false,
