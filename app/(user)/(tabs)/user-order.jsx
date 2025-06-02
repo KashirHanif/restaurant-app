@@ -62,9 +62,17 @@ export default function UserOrder() {
       const result = await response.json();
 
       if (Array.isArray(result.data)) {
-        const filteredOrders = result.data.filter(
-          (order) => order?.order_status !== "served"
-        );
+        const filteredOrders = result.data
+          .filter(
+            (order) =>
+              order?.order_items?.length > 0 &&
+              order?.total_price > 0 &&
+              order?.order_status !== "served"
+          )
+          .map((order) => ({
+            ...order,
+            id: order.id, // enforce real backend ID (Strapi v5 returns correct one here)
+          }));
 
         setOrders(filteredOrders);
         setOrdersStore(filteredOrders);
@@ -79,8 +87,70 @@ export default function UserOrder() {
     }
   };
 
+  const updateOrderStatuses = async () => {
+    const token = await AsyncStorage.getItem("userToken");
+
+    const updatedOrders = await Promise.all(
+      orders.map(async (order) => {
+        const createdAt = new Date(order.createdAt);
+        const now = new Date();
+        const elapsedMinutes = (now - createdAt) / 60000;
+
+        const maxPrepTime = Math.max(
+          ...order.order_items.map((item) => item.time_for_preparation || 0)
+        );
+
+        let newStatus = null;
+
+        if (order.order_status === "processing" && elapsedMinutes >= 2) {
+          newStatus = "preparing";
+        } else if (
+          order.order_status === "preparing" &&
+          elapsedMinutes >= 2 + maxPrepTime
+        ) {
+          newStatus = "prepared";
+        }
+
+        if (newStatus && order.documentId) {
+          try {
+            const res = await fetch(
+              `http://192.168.100.98:1337/api/orders/${order.documentId}`,
+              {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ data: { order_status: newStatus } }),
+              }
+            );
+
+            if (res.ok) {
+              const result = await res.json();
+              return result.data; // updated order
+            }
+          } catch (err) {
+            console.error(`Failed to update order #${order.documentId}:`, err);
+          }
+        }
+
+        return order;
+      })
+    );
+
+    setOrders(updatedOrders);
+    setOrdersStore(updatedOrders);
+  };
+
   useEffect(() => {
-    fetchOrders();
+    fetchOrders(); // Initial load
+
+    const interval = setInterval(async () => {
+      await updateOrderStatuses();
+      await fetchOrders();
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const renderOrder = ({ item }) => {

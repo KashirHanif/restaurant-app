@@ -2,21 +2,23 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CardField, useStripe } from "@stripe/stripe-react-native";
 import { useState } from "react";
 import {
-    Alert,
-    FlatList,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import CartItemCard from "../../../Components/CartItemCard";
+import { useOrderStore } from "../../../stores/useOrderStore";
 import TabHeader from "../../../Components/TabHeader";
 import { useCartStore } from "../../../stores/useCartStore";
 
 export default function UserCart() {
+  const setOrdersStore = useOrderStore((state) => state.setOrders);
   const cartItems = useCartStore((state) => state.cartItems);
   const clearCart = useCartStore((state) => state.clearCart);
   const totalAmount = cartItems.reduce(
@@ -157,6 +159,8 @@ export default function UserCart() {
 
       // 6. Finalize
       Alert.alert("Order Placed", "Your order has been placed successfully!");
+      const existingOrders = useOrderStore.getState().orders;
+      setOrdersStore([orderResult.data, ...existingOrders]);
       clearCart();
       setShowCardForm(false);
       setCardDetails(null);
@@ -166,7 +170,7 @@ export default function UserCart() {
     }
   };
 
-const renderItem = ({ item }) => <CartItemCard item={item} />;
+  const renderItem = ({ item }) => <CartItemCard item={item} />;
 
   return (
     <KeyboardAvoidingView
