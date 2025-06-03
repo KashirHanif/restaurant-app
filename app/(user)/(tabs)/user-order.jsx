@@ -14,8 +14,8 @@ import {
 } from "react-native";
 import TabHeader from "../../../Components/TabHeader";
 import { useOrderStore } from "../../../stores/useOrderStore";
+import BASE_URL from "../../../constants/constants";
 
-// Enable LayoutAnimation on Android
 if (
   Platform.OS === "android" &&
   UIManager.setLayoutAnimationEnabledExperimental
@@ -51,7 +51,7 @@ export default function UserOrder() {
       const userId = JSON.parse(userData)?.id;
 
       const response = await fetch(
-        `http://192.168.100.98:1337/api/orders?filters[user][id][$eq]=${userId}&populate[order_items][populate]=menu_item`,
+        `${BASE_URL}/api/orders?filters[user][id][$eq]=${userId}&populate[order_items][populate]=menu_item`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -114,7 +114,7 @@ export default function UserOrder() {
         if (newStatus && order.documentId) {
           try {
             const res = await fetch(
-              `http://192.168.100.98:1337/api/orders/${order.documentId}`,
+              `${BASE_URL}/api/orders/${order.documentId}`,
               {
                 method: "PUT",
                 headers: {

@@ -1,11 +1,12 @@
-import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Alert } from 'react-native';
+import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import { Alert } from "react-native";
+import BASE_URL from "../constants/constants";
 
 export const useSignup = () => {
   const router = useRouter();
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const validateEmail = (email) =>
@@ -13,41 +14,41 @@ export const useSignup = () => {
 
   const signup = async ({ username, email, password, role }) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setError('');
+    setError("");
 
     if (!validateEmail(email)) {
-      setError('Please enter a valid email.');
+      setError("Please enter a valid email.");
       return;
     }
     if (username.length < 3) {
-      setError('Username must be at least 3 characters.');
+      setError("Username must be at least 3 characters.");
       return;
     }
     if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+      setError("Password must be at least 6 characters.");
       return;
     }
 
     try {
       setLoading(true);
-      const response = await fetch('http://192.168.100.98:1337/api/auth/custom-register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch(`${BASE_URL}/api/auth/custom-register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email, password, role }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        Alert.alert('Success', `${role} account created!`);
-        router.replace('/login');
+        Alert.alert("Success", `${role} account created!`);
+        router.replace("/login");
       } else {
-        console.log('Signup Error:', data);
-        setError(data?.error?.message || 'Signup failed. Please try again.');
+        console.log("Signup Error:", data);
+        setError(data?.error?.message || "Signup failed. Please try again.");
       }
     } catch (err) {
-      console.error('Network Error:', err);
-      setError('Something went wrong. Please check your connection.');
+      console.error("Network Error:", err);
+      setError("Something went wrong. Please check your connection.");
     } finally {
       setLoading(false);
     }

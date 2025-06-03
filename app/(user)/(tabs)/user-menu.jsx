@@ -57,8 +57,6 @@ export default function UserMenu() {
     fetchMenuItems();
   }, [url]);
 
-  // Dummy example: Simulate adding to cart (replace with your logic)
-  // You can pass setCartCount to MenuCard or handle via global state
 
   return (
     <View style={styles.container}>

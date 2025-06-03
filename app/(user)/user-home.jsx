@@ -3,6 +3,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import BASE_URL from "../../constants/constants";
 
 export default function UserHome() {
   const router = useRouter();
@@ -68,7 +69,7 @@ export default function UserHome() {
 
     // Step 1: Get restaurant ID from documentId
     const restaurantRes = await fetch(
-      `http://192.168.100.98:1337/api/restaurants?filters[documentId][$eq]=${restaurantDocId}`,
+       `${BASE_URL}/api/restaurants?filters[documentId][$eq]=${restaurantDocId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -86,7 +87,7 @@ export default function UserHome() {
 
     // Step 2: Get table by resolved restaurant ID + table number
     const tableRes = await fetch(
-      `http://192.168.100.98:1337/api/tables?filters[restaurant][id][$eq]=${restaurantId}&filters[table_number][$eq]=${tableNumber}`,
+      `${BASE_URL}/api/tables?filters[restaurant][id][$eq]=${restaurantId}&filters[table_number][$eq]=${tableNumber}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

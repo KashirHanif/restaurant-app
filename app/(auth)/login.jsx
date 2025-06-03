@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import ForkcastLogo from "../../assets/images/Forkcast-logo.png";
+import BASE_URL from "../../constants/constants";
 
 export default function Login() {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function Login() {
 
     try {
       const response = await fetch(
-        "http://192.168.100.98:1337/api/auth/local/custom-login",
+        `${BASE_URL}/api/auth/local/custom-login`,
         {
           method: "POST",
           headers: {
@@ -125,7 +126,10 @@ export default function Login() {
 
             <TextInput
               placeholder="Email"
-              style={[styles.input, focusedField === "email" && styles.inputFocused]}
+              style={[
+                styles.input,
+                focusedField === "email" && styles.inputFocused,
+              ]}
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}

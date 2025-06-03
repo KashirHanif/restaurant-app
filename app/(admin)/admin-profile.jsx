@@ -1,5 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState } from 'react';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -12,39 +12,40 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
+} from "react-native";
+import BASE_URL from "../../constants/constants";
 
 export default function AdminProfile() {
-  const [restaurantName, setRestaurantName] = useState('');
-  const [location, setLocation] = useState('');
-  const [tables, setTables] = useState('');
-  const [error, setError] = useState('');
-  const [username, setUsername] = useState('');
-  const [userId, setUserId] = useState('');
+  const [restaurantName, setRestaurantName] = useState("");
+  const [location, setLocation] = useState("");
+  const [tables, setTables] = useState("");
+  const [error, setError] = useState("");
+  const [username, setUsername] = useState("");
+  const [userId, setUserId] = useState("");
   const [loading, setLoading] = useState(false);
   const [restaurantId, setRestaurantId] = useState(null);
 
   useEffect(() => {
     const fetchStoredData = async () => {
       try {
-        const userData = await AsyncStorage.getItem('userData');
-        const restaurantData = await AsyncStorage.getItem('restaurantData');
+        const userData = await AsyncStorage.getItem("userData");
+        const restaurantData = await AsyncStorage.getItem("restaurantData");
 
         if (userData) {
           const parsedUser = JSON.parse(userData);
-          setUsername(parsedUser.username || '');
+          setUsername(parsedUser.username || "");
           setUserId(parsedUser.id);
         }
 
         if (restaurantData) {
           const parsedRestaurant = JSON.parse(restaurantData);
           setRestaurantId(parsedRestaurant?.documentId);
-          setRestaurantName(parsedRestaurant.name || '');
-          setLocation(parsedRestaurant.location || '');
-          setTables(parsedRestaurant.number_of_tables?.toString() || '');
+          setRestaurantName(parsedRestaurant.name || "");
+          setLocation(parsedRestaurant.location || "");
+          setTables(parsedRestaurant.number_of_tables?.toString() || "");
         }
       } catch (e) {
-        console.error('Failed to load stored data:', e);
+        console.error("Failed to load stored data:", e);
       }
     };
 
@@ -53,21 +54,21 @@ export default function AdminProfile() {
 
   const handleSave = async () => {
     if (!restaurantName.trim() || !location.trim() || !tables.trim()) {
-      setError('Please fill all fields');
+      setError("Please fill all fields");
       return;
     }
     if (isNaN(tables) || Number(tables) <= 0) {
-      setError('Number of tables must be a positive number');
+      setError("Number of tables must be a positive number");
       return;
     }
 
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
-      const token = await AsyncStorage.getItem('userToken');
+      const token = await AsyncStorage.getItem("userToken");
       if (!token) {
-        Alert.alert('Error', 'User not authenticated');
+        Alert.alert("Error", "User not authenticated");
         setLoading(false);
         return;
       }
@@ -82,15 +83,15 @@ export default function AdminProfile() {
       };
 
       const url = restaurantId
-        ? `http://192.168.100.98:1337/api/restaurants/${restaurantId}`
-        : 'http://192.168.100.98:1337/api/restaurants';
+        ? `${BASE_URL}/api/restaurants/${restaurantId}`
+        : `${BASE_URL}/api/restaurants`;
 
-      const method = restaurantId ? 'PUT' : 'POST';
+      const method = restaurantId ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
@@ -99,15 +100,24 @@ export default function AdminProfile() {
       const result = await response.json();
 
       if (response.ok) {
-        await AsyncStorage.setItem('restaurantData', JSON.stringify(result.data));
-        Alert.alert('Success', restaurantId ? 'Profile updated!' : 'Profile saved successfully!');
+        await AsyncStorage.setItem(
+          "restaurantData",
+          JSON.stringify(result.data)
+        );
+        Alert.alert(
+          "Success",
+          restaurantId ? "Profile updated!" : "Profile saved successfully!"
+        );
         setRestaurantId(result.data.documentId);
       } else {
-        Alert.alert('Error', result.error?.message || 'Failed to save restaurant');
+        Alert.alert(
+          "Error",
+          result.error?.message || "Failed to save restaurant"
+        );
       }
     } catch (e) {
-      console.error('Save error:', e);
-      Alert.alert('Error', 'Something went wrong');
+      console.error("Save error:", e);
+      Alert.alert("Error", "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -122,11 +132,11 @@ export default function AdminProfile() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={{ flex: 1 }}
     >
       <ImageBackground
-        source={require('../../assets/images/admin-profile-bg.png')}
+        source={require("../../assets/images/admin-profile-bg.png")}
         resizeMode="cover"
         style={styles.background}
       >
@@ -136,11 +146,13 @@ export default function AdminProfile() {
             keyboardShouldPersistTaps="handled"
           >
             <Image
-              source={require('../../assets/images/user-icon.png')}
+              source={require("../../assets/images/user-icon.png")}
               style={styles.profileIcon}
             />
 
-            <Text style={styles.welcomeText}>Welcome, {username || 'Admin'}!</Text>
+            <Text style={styles.welcomeText}>
+              Welcome, {username || "Admin"}!
+            </Text>
             <Text style={styles.heading}>Setup Restaurant Profile</Text>
 
             <View style={styles.formCard}>
@@ -170,12 +182,15 @@ export default function AdminProfile() {
               {!!error && <Text style={styles.error}>{error}</Text>}
 
               <TouchableOpacity
-                style={[styles.button, isSaveDisabled && { backgroundColor: '#ccc' }]}
+                style={[
+                  styles.button,
+                  isSaveDisabled && { backgroundColor: "#ccc" },
+                ]}
                 onPress={handleSave}
                 disabled={isSaveDisabled || loading}
               >
                 <Text style={styles.buttonText}>
-                  {restaurantId ? 'Edit Profile' : 'Save Profile'}
+                  {restaurantId ? "Edit Profile" : "Save Profile"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -192,7 +207,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    marginTop:70
+    marginTop: 70,
   },
   scrollContainer: {
     paddingHorizontal: 24,
@@ -204,68 +219,68 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
   },
   welcomeText: {
     fontSize: 16,
-    fontWeight: '400',
-    color: '#666',
-    textAlign: 'center',
+    fontWeight: "400",
+    color: "#666",
+    textAlign: "center",
     marginBottom: 4,
   },
   heading: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#3e403f',
-    textAlign: 'center',
+    fontWeight: "600",
+    color: "#3e403f",
+    textAlign: "center",
     marginBottom: 16,
   },
   formCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: "rgba(255, 255, 255, 0.65)",
     padding: 20,
     borderRadius: 16,
     marginTop: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 15,
   },
   input: {
-    backgroundColor: '#f4f1ea',
+    backgroundColor: "#f4f1ea",
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 12,
     fontSize: 16,
-    color: '#3e403f',
+    color: "#3e403f",
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#d9d4c5',
+    borderColor: "#d9d4c5",
   },
   error: {
-    color: '#d9534f',
-    textAlign: 'center',
+    color: "#d9534f",
+    textAlign: "center",
     marginBottom: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   button: {
-    backgroundColor: '#6a994e',
+    backgroundColor: "#6a994e",
     paddingVertical: 16,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 10,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 4,
   },
   buttonText: {
-    color: '#fffaf3',
+    color: "#fffaf3",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });

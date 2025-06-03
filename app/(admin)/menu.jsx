@@ -14,13 +14,11 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
-
+import BASE_URL from "../../constants/constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-
-
 
 export default function Menu() {
   const [items, setItems] = useState([]);
@@ -28,7 +26,6 @@ export default function Menu() {
   const [editIndex, setEditIndex] = useState(null);
   const [loading, setLoading] = useState(false);
   const [prepTime, setPrepTime] = useState("");
-
 
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -69,7 +66,7 @@ export default function Menu() {
       }
 
       const response = await fetch(
-        `http://192.168.100.98:1337/api/menu-items?filters[restaurant][documentId][$eq]=${restaurantId}`,
+        `${BASE_URL}/api/menu-items?filters[restaurant][documentId][$eq]=${restaurantId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -85,7 +82,7 @@ export default function Menu() {
           category: item.category || "",
           description: item.description || [],
           documentId: item.documentId,
-          time_for_preparation:item.time_for_preparation,
+          time_for_preparation: item.time_for_preparation,
         }));
         setItems(items);
       } else {
@@ -102,16 +99,15 @@ export default function Menu() {
     }
   };
 
-const resetForm = () => {
-  setName("");
-  setPrice("");
-  setCategory("");
-  setDescription("");
-  setPrepTime(""); // Resetting the new field
-  setIsAdding(false);
-  setEditIndex(null);
-};
-
+  const resetForm = () => {
+    setName("");
+    setPrice("");
+    setCategory("");
+    setDescription("");
+    setPrepTime(""); // Resetting the new field
+    setIsAdding(false);
+    setEditIndex(null);
+  };
 
   const handleAddOrUpdate = async () => {
     if (!name.trim() || !price.trim()) {
@@ -139,21 +135,21 @@ const resetForm = () => {
     const restaurantId = parsedRestaurant?.documentId;
     setLoading(true);
 
-const itemData = {
-  name,
-  price: Number(price),
-  category,
-  description: description
-    ? [
-        {
-          type: "paragraph",
-          children: [{ type: "text", text: description }],
-        },
-      ]
-    : [],
-  restaurant: restaurantId,
-  time_for_preparation: prepTime, // New field added here
-};
+    const itemData = {
+      name,
+      price: Number(price),
+      category,
+      description: description
+        ? [
+            {
+              type: "paragraph",
+              children: [{ type: "text", text: description }],
+            },
+          ]
+        : [],
+      restaurant: restaurantId,
+      time_for_preparation: prepTime, // New field added here
+    };
 
     try {
       let response, result;
@@ -161,17 +157,14 @@ const itemData = {
       if (editIndex !== null) {
         const itemId = items[editIndex]?.documentId;
 
-        response = await fetch(
-          `http://192.168.100.98:1337/api/menu-items/${itemId}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ data: itemData }),
-          }
-        );
+        response = await fetch(`${BASE_URL}/api/menu-items/${itemId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ data: itemData }),
+        });
 
         result = await response.json();
 
@@ -182,7 +175,7 @@ const itemData = {
           Alert.alert("Error", result.error?.message || "Update failed");
         }
       } else {
-        response = await fetch("http://192.168.100.98:1337/api/menu-items", {
+        response = await fetch(`${BASE_URL}/api/menu-items`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -209,28 +202,27 @@ const itemData = {
     resetForm();
   };
 
-const handleEdit = (index) => {
-  const item = items[index];
-  setName(item.name);
-  setPrice(String(item.price));
-  setCategory(item.category || "");
-  const richText = item.description;
-  let plainDescription = "";
-  if (Array.isArray(richText)) {
-    plainDescription = richText
-      .map((block) =>
-        Array.isArray(block.children)
-          ? block.children.map((child) => child.text).join("")
-          : ""
-      )
-      .join("\n");
-  }
-  setDescription(plainDescription);
-  setPrepTime(item.time_for_preparation || ""); // Populate the new field
-  setEditIndex(index);
-  setIsAdding(true);
-};
-
+  const handleEdit = (index) => {
+    const item = items[index];
+    setName(item.name);
+    setPrice(String(item.price));
+    setCategory(item.category || "");
+    const richText = item.description;
+    let plainDescription = "";
+    if (Array.isArray(richText)) {
+      plainDescription = richText
+        .map((block) =>
+          Array.isArray(block.children)
+            ? block.children.map((child) => child.text).join("")
+            : ""
+        )
+        .join("\n");
+    }
+    setDescription(plainDescription);
+    setPrepTime(item.time_for_preparation || ""); // Populate the new field
+    setEditIndex(index);
+    setIsAdding(true);
+  };
 
   const handleDelete = (index) => {
     Alert.alert(
@@ -264,13 +256,10 @@ const handleEdit = (index) => {
     }
 
     try {
-      const response = await fetch(
-        `http://192.168.100.98:1337/api/menu-items/${itemId}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await fetch(`${BASE_URL}/api/menu-items/${itemId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (response.status === 204) {
         Alert.alert("Deleted", "Menu item deleted");
@@ -286,53 +275,133 @@ const handleEdit = (index) => {
   };
 
   const generateQrCodes = async () => {
-  try {
-    setLoading(true);
-    const token = await AsyncStorage.getItem("userToken");
-    const restaurantData = await AsyncStorage.getItem("restaurantData");
-    const parsedRestaurant = restaurantData ? JSON.parse(restaurantData) : null;
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem("userToken");
+      const restaurantData = await AsyncStorage.getItem("restaurantData");
+      const parsedRestaurant = restaurantData
+        ? JSON.parse(restaurantData)
+        : null;
 
-    if (!token || !parsedRestaurant?.documentId) {
-      Alert.alert("Missing data", "User token or restaurant profile is not available.");
-      return;
-    }
-
-    const restaurantDocId = parsedRestaurant.documentId;
-
-    // 🔄 1️⃣ Fetch the latest profile from Strapi to get the current number_of_tables
-    const profileRes = await fetch(
-      `http://192.168.100.98:1337/api/restaurants?filters[documentId][$eq]=${restaurantDocId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      if (!token || !parsedRestaurant?.documentId) {
+        Alert.alert(
+          "Missing data",
+          "User token or restaurant profile is not available."
+        );
+        return;
       }
-    );
-    const profileData = await profileRes.json();
-    const latestProfile = profileData?.data?.[0];
-    const numTables = Number(latestProfile?.number_of_tables);
-    
-    if (!numTables) {
-      Alert.alert("Error", "Failed to retrieve the number of tables.");
-      return;
-    }
 
-    // 🧾 2️⃣ Fetch existing QR tables
-    const existingRes = await fetch(
-      `http://192.168.100.98:1337/api/tables?filters[restaurant][documentId][$eq]=${restaurantDocId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const restaurantDocId = parsedRestaurant.documentId;
+
+      // 🔄 1️⃣ Fetch the latest profile from Strapi to get the current number_of_tables
+      const profileRes = await fetch(
+        `${BASE_URL}/api/restaurants?filters[documentId][$eq]=${restaurantDocId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const profileData = await profileRes.json();
+      const latestProfile = profileData?.data?.[0];
+      const numTables = Number(latestProfile?.number_of_tables);
+
+      if (!numTables) {
+        Alert.alert("Error", "Failed to retrieve the number of tables.");
+        return;
       }
-    );
-    const existingData = await existingRes.json();
-    const existingTables = existingData?.data || [];
 
-    // ✅ 3️⃣ Skip regeneration if same table count
-    if (existingTables.length === numTables) {
-      setQrTables(existingTables);
-      Alert.alert("QR Codes Already Exist", "Using previously generated QR codes.", [
+      // 🧾 2️⃣ Fetch existing QR tables
+      const existingRes = await fetch(
+        `${BASE_URL}/api/tables?filters[restaurant][documentId][$eq]=${restaurantDocId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const existingData = await existingRes.json();
+      const existingTables = existingData?.data || [];
+
+      // ✅ 3️⃣ Skip regeneration if same table count
+      if (existingTables.length === numTables) {
+        setQrTables(existingTables);
+        Alert.alert(
+          "QR Codes Already Exist",
+          "Using previously generated QR codes.",
+          [
+            {
+              text: "View PDF",
+              onPress: () => handleGeneratePdf(),
+            },
+            {
+              text: "Close",
+              style: "cancel",
+            },
+          ]
+        );
+        return;
+      }
+
+      // 🗑 4️⃣ Delete existing tables if count mismatches
+      if (existingTables.length > 0) {
+        const deletePromises = existingTables.map((table) =>
+          fetch(`${BASE_URL}/api/tables/${table.documentId}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+        );
+        await Promise.all(deletePromises);
+      }
+
+      await new Promise((res) => setTimeout(res, 300)); // Optional wait to avoid race condition
+
+      // 🆕 5️⃣ Create new tables
+      const creationPromises = [];
+
+      for (let tableNum = 1; tableNum <= numTables; tableNum++) {
+        const qrUrl = `${BASE_URL}/api/menu-items?filters[restaurant][documentId][$eq]=${restaurantDocId}&table=${tableNum}`;
+
+        const tablePayload = {
+          data: {
+            table_number: tableNum,
+            qr_code_url: qrUrl,
+            restaurant: restaurantDocId,
+          },
+        };
+
+        creationPromises.push(
+          fetch(`${BASE_URL}/api/tables`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(tablePayload),
+          })
+        );
+      }
+
+      await Promise.all(creationPromises);
+
+      // 🔄 6️⃣ Refetch final table list
+      const finalRes = await fetch(
+        `${BASE_URL}/api/tables?filters[restaurant][documentId][$eq]=${restaurantDocId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const finalData = await finalRes.json();
+      setQrTables(finalData?.data || []);
+
+      Alert.alert("Success", "QR Codes regenerated!", [
         {
           text: "View PDF",
           onPress: () => handleGeneratePdf(),
@@ -342,166 +411,104 @@ const handleEdit = (index) => {
           style: "cancel",
         },
       ]);
-      return;
+    } catch (err) {
+      console.error("QR code generation error:", err);
+      Alert.alert("Error", "Failed to generate QR codes.");
+    } finally {
+      setLoading(false);
     }
-
-    // 🗑 4️⃣ Delete existing tables if count mismatches
-    if (existingTables.length > 0) {
-      const deletePromises = existingTables.map((table) =>
-        fetch(`http://192.168.100.98:1337/api/tables/${table.documentId}`, {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-      );
-      await Promise.all(deletePromises);
-    }
-
-    await new Promise((res) => setTimeout(res, 300)); // Optional wait to avoid race condition
-
-    // 🆕 5️⃣ Create new tables
-    const creationPromises = [];
-
-    for (let tableNum = 1; tableNum <= numTables; tableNum++) {
-      const qrUrl = `http://192.168.100.98:1337/api/menu-items?filters[restaurant][documentId][$eq]=${restaurantDocId}&table=${tableNum}`;
-
-      const tablePayload = {
-        data: {
-          table_number: tableNum,
-          qr_code_url: qrUrl,
-          restaurant: restaurantDocId,
-        },
-      };
-      
-      
-      creationPromises.push(
-        fetch("http://192.168.100.98:1337/api/tables", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(tablePayload),
-        })
-      );
-    }
-
-    await Promise.all(creationPromises);
-
-    // 🔄 6️⃣ Refetch final table list
-    const finalRes = await fetch(
-      `http://192.168.100.98:1337/api/tables?filters[restaurant][documentId][$eq]=${restaurantDocId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    const finalData = await finalRes.json();
-    setQrTables(finalData?.data || []);
-
-    Alert.alert("Success", "QR Codes regenerated!", [
-      {
-        text: "View PDF",
-        onPress: () => handleGeneratePdf(),
-      },
-      {
-        text: "Close",
-        style: "cancel",
-      },
-    ]);
-  } catch (err) {
-    console.error("QR code generation error:", err);
-    Alert.alert("Error", "Failed to generate QR codes.");
-  } finally {
-    setLoading(false);
-  }
-};
-
-
+  };
 
   const handleGeneratePdf = async () => {
-  try {
-    let htmlContent = `
+    try {
+      let htmlContent = `
       <html>
         <body style="padding: 20px; font-family: sans-serif;">
     `;
 
-    for (const table of qrTables) {
-      const qrUrl = table?.qr_code_url;
-      const tableNum = table?.table_number;
+      for (const table of qrTables) {
+        const qrUrl = table?.qr_code_url;
+        const tableNum = table?.table_number;
 
-      // Generate QR image via public QR generator
-      const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrUrl)}`;
+        // Generate QR image via public QR generator
+        const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+          qrUrl
+        )}`;
 
-      htmlContent += `
+        htmlContent += `
         <div style="margin-bottom: 40px;">
           <h2>Table ${tableNum}</h2>
           <img src="${qrImageUrl}" width="150" height="150" />
         </div>
       `;
-    }
-
-    htmlContent += `</body></html>`;
-
-    const { uri } = await Print.printToFileAsync({ html: htmlContent });
-
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(uri);
-    } else {
-      const permission = await MediaLibrary.requestPermissionsAsync();
-      if (permission.granted) {
-        const asset = await MediaLibrary.createAssetAsync(uri);
-        await MediaLibrary.createAlbumAsync("QR Codes", asset, false);
-        Alert.alert("Saved", "PDF saved to your media folder.");
-      } else {
-        Alert.alert("Permission denied", "Cannot save PDF without permission.");
       }
-    }
-  } catch (err) {
-    console.error("PDF generation failed", err);
-    Alert.alert("Error", "Failed to generate PDF");
-  }
-};
 
+      htmlContent += `</body></html>`;
+
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri);
+      } else {
+        const permission = await MediaLibrary.requestPermissionsAsync();
+        if (permission.granted) {
+          const asset = await MediaLibrary.createAssetAsync(uri);
+          await MediaLibrary.createAlbumAsync("QR Codes", asset, false);
+          Alert.alert("Saved", "PDF saved to your media folder.");
+        } else {
+          Alert.alert(
+            "Permission denied",
+            "Cannot save PDF without permission."
+          );
+        }
+      }
+    } catch (err) {
+      console.error("PDF generation failed", err);
+      Alert.alert("Error", "Failed to generate PDF");
+    }
+  };
 
   const renderItem = ({ item, index }) => (
-  <View style={styles.card}>
-    <View style={{ flex: 1 }}>
-      <Text style={styles.cardTitle}>{item.name}</Text>
-      <Text style={styles.cardText}>Price: ₨ {item.price}</Text>
+    <View style={styles.card}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.cardTitle}>{item.name}</Text>
+        <Text style={styles.cardText}>Price: ₨ {item.price}</Text>
 
-      <Text style={styles.cardText}>
-        Prep Time: {item.time_for_preparation || '30'} minutes
-      </Text>
-
-      {item.category ? (
-        <Text style={styles.cardText}>Category: {item.category}</Text>
-      ) : null}
-
-      {Array.isArray(item.description) && item.description.length > 0 && (
         <Text style={styles.cardText}>
-          {item.description
-            .map((block) =>
-              block?.children?.map((child) => child.text).join("")
-            )
-            .join("\n")}
+          Prep Time: {item.time_for_preparation || "30"} minutes
         </Text>
-      )}
-    </View>
 
-    <View style={styles.cardButtons}>
-      <TouchableOpacity style={styles.editButton} onPress={() => handleEdit(index)}>
-        <Feather name="edit-3" size={20} color="#fff" />
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(index)}>
-        <Feather name="trash-2" size={20} color="#fff" />
-      </TouchableOpacity>
-    </View>
-  </View>
-);
+        {item.category ? (
+          <Text style={styles.cardText}>Category: {item.category}</Text>
+        ) : null}
 
+        {Array.isArray(item.description) && item.description.length > 0 && (
+          <Text style={styles.cardText}>
+            {item.description
+              .map((block) =>
+                block?.children?.map((child) => child.text).join("")
+              )
+              .join("\n")}
+          </Text>
+        )}
+      </View>
+
+      <View style={styles.cardButtons}>
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => handleEdit(index)}
+        >
+          <Feather name="edit-3" size={20} color="#fff" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => handleDelete(index)}
+        >
+          <Feather name="trash-2" size={20} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
   const ListEmptyComponent = () => (
     <View style={styles.emptyContainer}>
@@ -509,133 +516,135 @@ const handleEdit = (index) => {
     </View>
   );
 
-return (
-  <KeyboardAvoidingView
-    behavior={Platform.OS === "ios" ? "padding" : undefined}
-    style={styles.container}
-  >
-    {loading && (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#6a994e" />
-      </View>
-    )}
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={styles.container}
+    >
+      {loading && (
+        <View style={styles.loader}>
+          <ActivityIndicator size="large" color="#6a994e" />
+        </View>
+      )}
 
-    {!isAdding ? (
-      <>
-        <FlatList
-          data={items}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderItem}
-          ListEmptyComponent={ListEmptyComponent}
-          contentContainerStyle={
-            items.length === 0
-              ? styles.flatListEmpty
-              : { padding: 24, paddingBottom: 96 }
-          }
-          showsVerticalScrollIndicator={false}
-        />
-
-        <TouchableOpacity
-          style={styles.qrFab}
-          onPress={generateQrCodes}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="qr-code" size={24} color="#fff" />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={async () => {
-            const restaurantData = await AsyncStorage.getItem("restaurantData");
-            if (!restaurantData) {
-              Alert.alert(
-                "Complete Profile",
-                "Please set your profile before adding menu items.",
-                [
-                  {
-                    text: "Go to Profile",
-                    onPress: () => router.replace("/(admin)/admin-profile"),
-                  },
-                  { text: "Cancel", style: "cancel" },
-                ]
-              );
-              return;
+      {!isAdding ? (
+        <>
+          <FlatList
+            data={items}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderItem}
+            ListEmptyComponent={ListEmptyComponent}
+            contentContainerStyle={
+              items.length === 0
+                ? styles.flatListEmpty
+                : { padding: 24, paddingBottom: 96 }
             }
+            showsVerticalScrollIndicator={false}
+          />
 
-            setIsAdding(true);
-          }}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="add" size={28} color="#fff" />
-        </TouchableOpacity>
-      </>
-    ) : (
-      <View style={styles.form}>
-        <Text style={styles.heading}>
-          {editIndex !== null ? "Edit Menu Item" : "Add Menu Item"}
-        </Text>
+          <TouchableOpacity
+            style={styles.qrFab}
+            onPress={generateQrCodes}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="qr-code" size={24} color="#fff" />
+          </TouchableOpacity>
 
-        <TextInput
-          placeholder="Name"
-          style={styles.input}
-          value={name}
-          onChangeText={setName}
-          placeholderTextColor="#888"
-        />
-        <TextInput
-          placeholder="Price"
-          style={styles.input}
-          value={price}
-          onChangeText={setPrice}
-          keyboardType="numeric"
-          placeholderTextColor="#888"
-        />
-        <TextInput
-          placeholder="Category"
-          style={styles.input}
-          value={category}
-          onChangeText={setCategory}
-          placeholderTextColor="#888"
-        />
-        <TextInput
-          placeholder="Description"
-          style={[styles.input, styles.textArea]}
-          value={description}
-          onChangeText={setDescription}
-          multiline
-          numberOfLines={4}
-          placeholderTextColor="#888"
-        />
-        <TextInput
-        placeholder="Time of Preparation (e.g., 30 minutes)"
-        style={styles.input}
-        value={prepTime}
-        onChangeText={setPrepTime}
-        placeholderTextColor="#888"
-        />
-        <TouchableOpacity
-          style={styles.saveButton}
-          onPress={handleAddOrUpdate}
-          disabled={loading}
-        >
-          <Text style={styles.saveButtonText}>
-            {editIndex !== null ? "Update" : "Add"}
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={async () => {
+              const restaurantData = await AsyncStorage.getItem(
+                "restaurantData"
+              );
+              if (!restaurantData) {
+                Alert.alert(
+                  "Complete Profile",
+                  "Please set your profile before adding menu items.",
+                  [
+                    {
+                      text: "Go to Profile",
+                      onPress: () => router.replace("/(admin)/admin-profile"),
+                    },
+                    { text: "Cancel", style: "cancel" },
+                  ]
+                );
+                return;
+              }
+
+              setIsAdding(true);
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add" size={28} color="#fff" />
+          </TouchableOpacity>
+        </>
+      ) : (
+        <View style={styles.form}>
+          <Text style={styles.heading}>
+            {editIndex !== null ? "Edit Menu Item" : "Add Menu Item"}
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={resetForm} disabled={loading}>
-          <Text style={styles.cancelText}>Cancel</Text>
-        </TouchableOpacity>
-      </View>
-    )}
-  </KeyboardAvoidingView>
-);
+
+          <TextInput
+            placeholder="Name"
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            placeholderTextColor="#888"
+          />
+          <TextInput
+            placeholder="Price"
+            style={styles.input}
+            value={price}
+            onChangeText={setPrice}
+            keyboardType="numeric"
+            placeholderTextColor="#888"
+          />
+          <TextInput
+            placeholder="Category"
+            style={styles.input}
+            value={category}
+            onChangeText={setCategory}
+            placeholderTextColor="#888"
+          />
+          <TextInput
+            placeholder="Description"
+            style={[styles.input, styles.textArea]}
+            value={description}
+            onChangeText={setDescription}
+            multiline
+            numberOfLines={4}
+            placeholderTextColor="#888"
+          />
+          <TextInput
+            placeholder="Time of Preparation (e.g., 30 minutes)"
+            style={styles.input}
+            value={prepTime}
+            onChangeText={setPrepTime}
+            placeholderTextColor="#888"
+          />
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={handleAddOrUpdate}
+            disabled={loading}
+          >
+            <Text style={styles.saveButtonText}>
+              {editIndex !== null ? "Update" : "Add"}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={resetForm} disabled={loading}>
+            <Text style={styles.cancelText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </KeyboardAvoidingView>
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fffaf3",
-    marginTop:20
+    marginTop: 20,
   },
   flatListEmpty: {
     flexGrow: 1,
@@ -653,9 +662,9 @@ const styles = StyleSheet.create({
   },
   form: {
     flex: 1,
-    backgroundColor: '#fffaf3',
+    backgroundColor: "#fffaf3",
     padding: 24,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   heading: {
     fontSize: 22,
@@ -779,4 +788,3 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-

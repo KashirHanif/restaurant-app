@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import BASE_URL from "../../../constants/constants";
 import CartItemCard from "../../../Components/CartItemCard";
 import { useOrderStore } from "../../../stores/useOrderStore";
 import TabHeader from "../../../Components/TabHeader";
@@ -38,17 +39,14 @@ export default function UserCart() {
 
     try {
       // 1. Create Stripe Payment Intent
-      const response = await fetch(
-        "http://192.168.100.98:1337/api/payment-intent",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            amount: Math.round(totalAmount * 100),
-            currency: "usd",
-          }),
-        }
-      );
+      const response = await fetch(`${BASE_URL}/api/payment-intent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: Math.round(totalAmount * 100),
+          currency: "usd",
+        }),
+      });
 
       const { clientSecret } = await response.json();
       if (!clientSecret) {
@@ -96,7 +94,7 @@ export default function UserCart() {
         },
       };
 
-      const orderRes = await fetch("http://192.168.100.98:1337/api/orders", {
+      const orderRes = await fetch(`${BASE_URL}/api/orders`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -137,17 +135,14 @@ export default function UserCart() {
           },
         };
 
-        const itemRes = await fetch(
-          "http://192.168.100.98:1337/api/order-items",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(orderItemPayload),
-          }
-        );
+        const itemRes = await fetch(`${BASE_URL}/api/order-items`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(orderItemPayload),
+        });
 
         const itemResult = await itemRes.json();
         if (!itemRes.ok) {
