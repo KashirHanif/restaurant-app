@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -27,6 +27,7 @@ export default function UserOrder() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const ordersRef = useRef([]);
 
   const setOrdersStore = useOrderStore((state) => state.setOrders);
 
@@ -91,13 +92,13 @@ export default function UserOrder() {
     const token = await AsyncStorage.getItem("userToken");
 
     const updatedOrders = await Promise.all(
-      orders.map(async (order) => {
+      ordersRef.current.map(async (order) => {
         const createdAt = new Date(order.createdAt);
         const now = new Date();
         const elapsedMinutes = (now - createdAt) / 60000;
 
         const maxPrepTime = Math.max(
-          ...order.order_items.map((item) => item.time_for_preparation || 0)
+          ...order.order_items.map((item) => item.time_for_preparation || 30)
         );
 
         let newStatus = null;
@@ -127,7 +128,7 @@ export default function UserOrder() {
 
             if (res.ok) {
               const result = await res.json();
-              return result.data; // updated order
+              return result.data;
             }
           } catch (err) {
             console.error(`Failed to update order #${order.documentId}:`, err);
@@ -141,6 +142,10 @@ export default function UserOrder() {
     setOrders(updatedOrders);
     setOrdersStore(updatedOrders);
   };
+
+  useEffect(() => {
+    ordersRef.current = orders;
+  }, [orders]);
 
   useEffect(() => {
     fetchOrders(); // Initial load
@@ -164,6 +169,21 @@ export default function UserOrder() {
       setExpandedOrderId(isExpanded ? null : item.id);
     };
 
+    const createdAt = new Date(item.createdAt);
+    const now = new Date();
+    const elapsed = Math.floor((now - createdAt) / 60000); // in minutes
+
+    const prepTimes = item.order_items.map(
+      (i) => i?.menu_item?.time_for_preparation || 0
+    );
+    const maxPrepTime = Math.max(...prepTimes);
+    const totalCountdown = 2 + maxPrepTime;
+    const timeLeft = Math.max(0, totalCountdown - elapsed);
+    const progress = Math.min(
+      100,
+      Math.floor((elapsed / totalCountdown) * 100)
+    );
+
     return (
       <TouchableOpacity
         onPress={toggleExpand}
@@ -175,14 +195,40 @@ export default function UserOrder() {
         ]}
       >
         <View style={styles.cardHeader}>
-          <Text style={styles.title}>Order #{item.id}</Text>
+          <Text style={styles.title}>Order #{item.order_number}</Text>
           <Text style={[styles.status, { color: getStatusColor(status) }]}>
             {status.charAt(0).toUpperCase() + status.slice(1)}
           </Text>
         </View>
+
         <View style={styles.cardBody}>
           <Text style={styles.label}>Total: ₨ {total}</Text>
           <Text style={styles.date}>{date}</Text>
+
+          {(status === "processing" || status === "preparing") && (
+            <>
+              <View style={styles.progressBar}>
+                <View
+                  style={[styles.progressFill, { width: `${progress}%` }]}
+                />
+              </View>
+
+              {timeLeft > 0 && (
+                <Text style={styles.timerText}>
+                  ⏳ Ready in approx: {timeLeft} min
+                </Text>
+              )}
+            </>
+          )}
+
+          {status === "prepared" && (
+            <View style={styles.readySoonContainer}>
+              <Text style={styles.readySoonEmoji}>⏰</Text>
+              <Text style={styles.readySoonText}>
+                Time’s up! Your order will be served soon.
+              </Text>
+            </View>
+          )}
         </View>
 
         {isExpanded && (
@@ -305,5 +351,44 @@ const styles = StyleSheet.create({
     marginTop: 60,
     fontSize: 16,
     color: "#707070",
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: "#e0e0e0",
+    borderRadius: 6,
+    overflow: "hidden",
+    marginTop: 8,
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#6a994e",
+  },
+  timerText: {
+    marginTop: 6,
+    color: "#ff6347",
+    fontWeight: "600",
+  },
+
+  readySoonContainer: {
+    marginTop: 10,
+    backgroundColor: "#d8f3dc",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  readySoonEmoji: {
+    fontSize: 18,
+    marginRight: 8,
+  },
+
+  readySoonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1b4332",
+    flex: 1,
+    flexWrap: "wrap",
   },
 });

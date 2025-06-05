@@ -31,6 +31,13 @@ export default function UserCart() {
   const [showCardForm, setShowCardForm] = useState(false);
   const [cardDetails, setCardDetails] = useState(null);
 
+  const generateOrderNumber = () => {
+  const letters = Math.random().toString(36).substring(2, 4).toUpperCase(); // 2 letters
+  const digits = Math.floor(1000 + Math.random() * 9000); // 4-digit number
+  return `ORD-${letters}${digits}`;
+};
+
+
   const handleCheckout = async () => {
     if (!cardDetails?.complete) {
       Alert.alert("Invalid Card", "Please enter complete card details.");
@@ -82,6 +89,7 @@ export default function UserCart() {
       }
 
       // 4. Create Order (excluding order_items for now)
+      const orderNumber = generateOrderNumber();
       const orderPayload = {
         data: {
           user: userId,
@@ -91,6 +99,7 @@ export default function UserCart() {
           stripe_payment_id: paymentIntent.id,
           order_status: "processing",
           payment_status: "paid",
+          order_number: orderNumber,
         },
       };
 
