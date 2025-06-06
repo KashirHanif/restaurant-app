@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import ForkcastLogo from "../../assets/images/Forkcast-logo.png";
 import BASE_URL from "../../constants/constants";
+import { registerPushToken } from "../../utils/registerPushToken"; // ✅ Import the utility
 
 export default function Login() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export default function Login() {
     /^\w+([.-]?\w+)@\w+([.-]?\w+)(\.\w{2,3})+$/.test(email);
 
   const handleLogin = async () => {
-    Keyboard.dismiss(); // <-- Dismiss keyboard on login press
+    Keyboard.dismiss();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     if (!validateEmail(email)) {
@@ -81,7 +82,11 @@ export default function Login() {
       setError("");
 
       const role = user?.role?.toLowerCase();
+
       if (role === "customer") {
+        // ✅ Register push token for customers only
+        await registerPushToken(user.id);
+
         const pendingUrl = await AsyncStorage.getItem("pendingMenuURL");
         if (pendingUrl) {
           await AsyncStorage.removeItem("pendingMenuURL");
@@ -107,7 +112,6 @@ export default function Login() {
       style={styles.background}
       resizeMode="cover"
     >
-      {/* Dismiss keyboard on tapping outside */}
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -198,12 +202,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
-    marginTop: -24, // optional: lift it higher if needed
+    marginTop: -24,
   },
   logo: {
-    width: 480, // bigger and better
+    width: 480,
     height: 280,
-    marginLeft: 15, // adjusts for logo imbalance
+    marginLeft: 15,
   },
   title: {
     fontSize: 30,
@@ -262,3 +266,4 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
+

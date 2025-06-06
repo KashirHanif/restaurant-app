@@ -1,5 +1,3 @@
-// app/(admin)/_layout.jsx
-
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 
@@ -16,6 +14,8 @@ export default function AdminLayout() {
             iconName = 'restaurant';
           } else if (route.name === 'admin-profile') {
             iconName = 'person';
+          } else if (route.name === 'admin-order') {
+            iconName = 'receipt'; // icon representing orders
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -26,6 +26,7 @@ export default function AdminLayout() {
       })}
     >
       <Tabs.Screen name="admin-home" options={{ title: 'Home' }} />
+      <Tabs.Screen name="admin-order" options={{ title: 'Order' }} />
       <Tabs.Screen name="menu" options={{ title: 'Menu' }} />
       <Tabs.Screen name="admin-profile" options={{ title: 'Profile' }} />
     </Tabs>
